@@ -1,0 +1,118 @@
+<script lang="ts">
+	import { createForm } from '@tanstack/svelte-form';
+	import { onMount } from 'svelte';
+	import { z } from 'zod';
+	import { authClient } from '#lib/auth-client.ts';
+	import { goto } from '$app/navigation';
+
+	const session = authClient.useSession();
+	let mounted = $state(false);
+	onMount(() => {
+		mounted = true;
+	});
+
+	let { switchToSignUp }: { switchToSignUp: () => void } = $props();
+
+	const validationSchema = z.object({
+		email: z.email('Invalid email address'),
+		password: z.string().min(1, 'Password is required'),
+	});
+
+	const form = createForm(() => ({
+		defaultValues: { email: '', password: '' },
+		onSubmit: async ({ value }) => {
+				await authClient.signIn.email(
+					{ email: value.email, password: value.password },
+					{
+						onSuccess: async () => {
+							await $session.refetch();
+							await goto('/dashboard');
+						},
+						onError: (error) => {
+							console.log(error.error.message || 'Sign in failed. Please try again.');
+						},
+					}
+				);
+
+		},
+		validators: {
+			onSubmit: validationSchema,
+		},
+	}));
+
+	type SubmitState = Pick<typeof form.state, 'canSubmit' | 'isSubmitting'>;
+</script>
+
+<div class="mx-auto mt-10 w-full max-w-md p-6">
+	<h1 class="mb-6 text-center font-bold text-3xl">Welcome Back</h1>
+
+	<form
+		method="post"
+		class="space-y-4"
+		onsubmit={(e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			form.handleSubmit();
+		}}
+	>
+		<fieldset class="space-y-4" disabled={!mounted}>
+			<form.Field name="email">
+				{#snippet children(field)}
+					<div class="space-y-1">
+						<label for={field.name}>Email</label>
+						<input
+							id={field.name}
+							name={field.name}
+							type="email"
+							class="w-full border"
+							onblur={field.handleBlur}
+							value={field.state.value}
+							oninput={(e) => field.handleChange(e.currentTarget.value)}
+						/>
+						{#if field.state.meta.isTouched}
+							{#each field.state.meta.errors as error}
+								<p class="text-sm text-red-500" role="alert">{error?.message}</p>
+							{/each}
+						{/if}
+					</div>
+				{/snippet}
+			</form.Field>
+
+			<form.Field name="password">
+				{#snippet children(field)}
+					<div class="space-y-1">
+						<label for={field.name}>Password</label>
+						<input
+							id={field.name}
+							name={field.name}
+							type="password"
+							class="w-full border"
+							onblur={field.handleBlur}
+							value={field.state.value}
+							oninput={(e) => field.handleChange(e.currentTarget.value)}
+						/>
+						{#if field.state.meta.isTouched}
+							{#each field.state.meta.errors as error}
+								<p class="text-sm text-red-500" role="alert">{error?.message}</p>
+							{/each}
+						{/if}
+					</div>
+				{/snippet}
+			</form.Field>
+
+			<form.Subscribe selector={(state: typeof form.state): SubmitState => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}>
+				{#snippet children(state: SubmitState)}
+					<button type="submit" class="w-full" disabled={!state.canSubmit || state.isSubmitting}>
+						{state.isSubmitting ? 'Submitting...' : 'Sign In'}
+					</button>
+				{/snippet}
+			</form.Subscribe>
+		</fieldset>
+	</form>
+
+	<div class="mt-4 text-center">
+		<button type="button" class="text-indigo-600 hover:text-indigo-800" disabled={!mounted} onclick={switchToSignUp}>
+			Need an account? Sign Up
+		</button>
+	</div>
+</div>
