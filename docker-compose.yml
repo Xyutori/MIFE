@@ -1,15 +1,18 @@
 name: MIFE
 
-# Variabel ${...} dibaca dari .env di root repo (lihat .env.example).
-# Jangan commit .env — berisi secret.
+# Konfigurasi deploy ada di .env.production masing-masing app
+# (apps/server/.env.production, apps/web/.env.production).
+# Tidak ada lagi .env di root — compose hanya memakai default di bawah
+# atau override via environment saat menjalankan compose.
 
 services:
   postgres:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD di .env}
-      POSTGRES_DB: symi
+    # Kredensial dari apps/server/.env.production (POSTGRES_*).
+    # Samakan password-nya dengan password di DATABASE_URL file yang sama.
+    env_file:
+      - path: apps/server/.env.production
+        required: true
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -24,9 +27,11 @@ services:
     image: chainguard/minio:latest
     entrypoint: ["/usr/bin/minio"]
     command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?isi MINIO_ROOT_PASSWORD di .env}
+    # Kredensial dari apps/server/.env.production (MINIO_ROOT_*).
+    # Samakan dengan S3_ACCESS_KEY/S3_SECRET_KEY file yang sama.
+    env_file:
+      - path: apps/server/.env.production
+        required: true
     volumes:
       - minio-data:/data
     # Tanpa healthcheck: image chainguard minimal tanpa curl/wget.
@@ -45,17 +50,10 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - path: apps/server/.env
-        required: false
-    environment:
-      # Aplikasi HANYA membaca DATABASE_URL (single source of truth).
-      # POSTGRES_PASSWORD hanya untuk inisialisasi volume postgres pertama
-      # kali — nilainya harus cocok dengan password di DATABASE_URL.
-      DATABASE_URL: ${DATABASE_URL:?isi DATABASE_URL di .env}
-      S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?isi MINIO_ROOT_PASSWORD di .env}
-      PORT: "4000"
+      - path: apps/server/.env.production
+        required: true
+    # Tanpa environment override: .env.production sudah berisi nilai prod
+    # (DATABASE_URL @postgres, S3 @minio). Dev lokal pakai apps/server/.env.
     expose:
       - "4000"
     healthcheck:
@@ -76,8 +74,6 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      args:
-        PUBLIC_SERVER_URL: https://mife.feryn.xyz
       secrets:
         - web_env
     init: true
@@ -107,12 +103,13 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-# BuildKit secrets: hanya tersedia saat install/build, tidak masuk image.
+# BuildKit secrets: HANYA tersedia saat install/build, tidak masuk image.
+# Build memakai .env.production (nilai prod); dev lokal pakai .env biasa.
 secrets:
   web_env:
-    file: apps/web/.env
+    file: apps/web/.env.production
   server_env:
-    file: apps/server/.env
+    file: apps/server/.env.production
 
 volumes:
   pgdata:

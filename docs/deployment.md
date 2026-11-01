@@ -20,21 +20,24 @@ Alur request: `mife.feryn.xyz` → `tunnel` → `web:80` → (`/` file statis, `
 
 ## Environment
 
-Satu-satunya konfigurasi database aplikasi adalah **`DATABASE_URL`** (root `.env`):
+Satu-satunya konfigurasi database aplikasi adalah **`DATABASE_URL`**
+di `apps/server/.env.production`:
 
 ```env
 DATABASE_URL=postgresql://app:<password>@postgres:5432/symi   # deploy (HOST=postgres)
-# DATABASE_URL=postgresql://app:<password>@localhost:5432/symi # dev lokal (HOST=localhost)
+# DATABASE_URL=postgresql://app:<password>@localhost:5432/symi # dev: apps/server/.env (HOST=localhost)
 ```
 
-`POSTGRES_PASSWORD` di root `.env` hanya dipakai inisialisasi volume `pgdata`
+`POSTGRES_PASSWORD` di file yang sama hanya dipakai inisialisasi volume `pgdata`
 pertama kali — harus sama dengan password di `DATABASE_URL`.
 
 | File | Isi |
 |------|-----|
-| `.env` (root, gitignored) | `DATABASE_URL`, `POSTGRES_PASSWORD`, `MINIO_*`, `CLOUDFLARE_TUNNEL_TOKEN` |
-| `apps/server/.env` (gitignored) | `BETTER_AUTH_URL=https://mife.feryn.xyz`, `CORS_ORIGIN=https://mife.feryn.xyz`, OAuth creds, `S3_*` |
-| `apps/web/.env` (gitignored) | `PUBLIC_SERVER_URL=https://mife.feryn.xyz` |
+| `apps/server/.env` (gitignored, dev) | URL/`DATABASE_URL`/`S3_*` → `localhost`, kredensial OAuth |
+| `apps/server/.env.production` (gitignored, prod) | SEMUA config deploy: URL domain, `DATABASE_URL` → `@postgres`, `S3` → `@minio`, OAuth, plus `POSTGRES_*` (init volume, password = password di DATABASE_URL) dan `MINIO_ROOT_*` (= `S3_*`) |
+| `apps/web/.env` (gitignored, dev) | `PUBLIC_SERVER_URL=http://localhost:4000` |
+| `apps/web/.env.production` (gitignored, prod) | `PUBLIC_SERVER_URL=https://mife.feryn.xyz` |
+| Tidak ada `.env` root | compose tidak butuh interpolasi apa pun; contoh: `apps/*/.env.production.example` |
 
 Google Console wajib: origin `https://mife.feryn.xyz` + redirect
 `https://mife.feryn.xyz/api/auth/callback/google` (sesuaikan per provider).
@@ -59,8 +62,8 @@ cloudflared tunnel route dns mife-app mife.feryn.xyz # CNAME → tunnel (sekali 
 ```
 
 `deploy/cloudflared-config.yml` memetakan `mife.feryn.xyz → http://web:80`.
-`CLOUDFLARE_TUNNEL_TOKEN` di `.env` sudah tidak dipakai. Tunnel dashboard lama
-(`MIFE`/`MIFE-2`) boleh dihapus bila tidak dipakai.
+Tidak ada token di repo — konektor memakai kredensial lokal `~/.cloudflared`.
+Tunnel dashboard lama (`MIFE`/`MIFE-2`) boleh dihapus bila tidak dipakai.
 ```
 
 Migrasi DB jalan otomatis tiap boot `server` (idempoten via journal drizzle).
@@ -93,6 +96,6 @@ curl -s http://localhost:8080/api/auth/providers   # via gateway
 | `server` restarting | migrasi gagal / env salah | `docker compose logs server --tail 30` |
 | Login sosial error `invalid_client` | redirect URI belum ditambah di Google Console | cek callback URL di atas |
 | `🚨 DETECTED LEAKED SENSITIVE CONFIG - *_CLIENT_ID` | `client_id` sah muncul di URL authorize — sudah dikecualikan via `@sensitive={preventLeaks=false}` di `apps/server/.env.schema`; pastikan file itu versi terbaru dan server di-restart |
-| Tunnel `Restarting` | token kosong/salah | isi `CLOUDFLARE_TUNNEL_TOKEN`, `docker compose up -d tunnel` |
-| DB auth failed setelah ganti password | volume lama dibuat dengan password lama | samakan `POSTGRES_PASSWORD` + password di `DATABASE_URL`, atau `down -v` (data hilang) lalu `up -d` |
-| Compose error `required variable ... is missing` | `.env` root belum diisi | salin dari `.env.example` |
+| Tunnel `Restarting` | kredensial lokal hilang/permission | `ls -l ~/.cloudflared/`, `chmod 644` bila perlu |
+| DB auth failed setelah ganti password | volume lama dibuat dengan password lama | samakan `POSTGRES_PASSWORD` + password di `DATABASE_URL` di `apps/server/.env.production`, atau `down -v` (data hilang) lalu `up -d` |
+| Mesin fresh: contoh env belum diisi | salin `apps/*/.env.production.example` → `.env.production` lalu isi |
