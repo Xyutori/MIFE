@@ -5,10 +5,13 @@ WORKDIR /app
 COPY . .
 RUN --mount=type=cache,target=/root/.bun/install/cache bun install
 
-# Nilai prod (PUBLIC_SERVER_URL domain) berasal dari secret .env.production
-# yang di-mount sebagai .env.local saat codegen; build membacanya dari sana.
+# Nilai publik di-bake via ARG (bukan secret, aman masuk image).
+# Secret .env.production hanya dipakai saat codegen tipe.
+ARG PUBLIC_SERVER_URL=https://mife.feryn.xyz
+ARG PORT=4001
 RUN --mount=type=secret,id=web_env,target=/app/apps/web/.env.local --mount=type=cache,target=/root/.bun/install/cache \
 	cd apps/web && bun run env:generate
+RUN printf 'PUBLIC_SERVER_URL=%s\nNODE_ENV=production\nPORT=%s\n' "$PUBLIC_SERVER_URL" "$PORT" > /app/apps/web/.env.local
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	cd apps/web && bun run build
 
