@@ -46,7 +46,9 @@ Bun 1.3+ can bundle HTML and serve frontend HMR alongside Elysia through `@elysi
 import { staticPlugin } from "@elysia/static";
 import { Elysia } from "elysia";
 
-new Elysia().use(await staticPlugin({ prefix: "/", bunFullstack: true })).listen(3000);
+new Elysia()
+	.use(await staticPlugin({ prefix: "/", bunFullstack: true }))
+	.listen(3000);
 ```
 
 Put `index.html` in `public/` and reference frontend modules from it. `bunFullstack: true` enables bundling; awaiting the plugin alone does not. The default prefix is `/public`. See [versions.md](versions.md) for compatible packages.
@@ -76,18 +78,18 @@ For ESM TypeScript, set `type: 'module'` in `package.json`. Use `tsx watch src/i
 
 ```json
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["node"],
-    "rootDir": "src",
-    "outDir": "dist",
-    "strict": true,
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*.ts"]
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"types": ["node"],
+		"rootDir": "src",
+		"outDir": "dist",
+		"strict": true,
+		"skipLibCheck": true
+	},
+	"include": ["src/**/*.ts"]
 }
 ```
 
@@ -120,7 +122,7 @@ import { Elysia } from "elysia";
 export const app = new Elysia().get("/", () => "Hello Worker");
 
 export default {
-  fetch: (request: Request) => app.handle(request),
+	fetch: (request: Request) => app.handle(request),
 };
 ```
 
@@ -132,15 +134,15 @@ import { aot } from "elysia/plugin/aot/esbuild";
 import * as esbuild from "esbuild";
 
 await esbuild.build({
-  entryPoints: ["src/index.ts"],
-  bundle: true,
-  format: "esm",
-  outfile: "dist/worker.js",
-  conditions: ["workerd", "worker", "browser", "import"],
-  platform: "browser",
-  target: "esnext",
-  external: ["node:*", "cloudflare:*"],
-  plugins: [aot("src/index.ts", { target: "workerd" })],
+	entryPoints: ["src/index.ts"],
+	bundle: true,
+	format: "esm",
+	outfile: "dist/worker.js",
+	conditions: ["workerd", "worker", "browser", "import"],
+	platform: "browser",
+	target: "esnext",
+	external: ["node:*", "cloudflare:*"],
+	plugins: [aot("src/index.ts", { target: "workerd" })],
 });
 ```
 
@@ -149,12 +151,12 @@ The v2 integration recipe uses this Wrangler configuration:
 ```jsonc
 // wrangler.jsonc
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "elysia-worker",
-  "main": "dist/worker.js",
-  "compatibility_date": "2025-09-06",
-  "compatibility_flags": ["nodejs_compat"],
-  "build": { "command": "bun build.ts" },
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "elysia-worker",
+	"main": "dist/worker.js",
+	"compatibility_date": "2025-09-06",
+	"compatibility_flags": ["nodejs_compat"],
+	"build": { "command": "bun build.ts" }
 }
 ```
 
@@ -231,9 +233,9 @@ The community [nuxt-elysia module](https://github.com/tkesgar/nuxt-elysia) provi
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ["nuxt-elysia"],
-  nitro: { preset: "bun" },
-  nuxtElysia: { path: "/api" },
+	modules: ["nuxt-elysia"],
+	nitro: { preset: "bun" },
+	nuxtElysia: { path: "/api" },
 });
 ```
 
@@ -299,14 +301,17 @@ import { createFileRoute } from "@tanstack/react-router";
 // src/routes/api.$.ts
 import { Elysia } from "elysia";
 
-const app = new Elysia({ prefix: "/api" }).get("/", () => "Hello TanStack Start");
+const app = new Elysia({ prefix: "/api" }).get(
+	"/",
+	() => "Hello TanStack Start",
+);
 
 export const Route = createFileRoute("/api/$")({
-  server: {
-    handlers: {
-      GET: ({ request }) => app.fetch(request),
-    },
-  },
+	server: {
+		handlers: {
+			GET: ({ request }) => app.fetch(request),
+		},
+	},
 });
 ```
 

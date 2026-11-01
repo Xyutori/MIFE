@@ -1,0 +1,1 @@
+ALTER TABLE "comments" DROP CONSTRAINT "comments_target_type_check", ADD CONSTRAINT "comments_target_type_check" CHECK ("target_type" in ('comic_chapter', 'anime_episode', 'comic_series', 'anime_series'));

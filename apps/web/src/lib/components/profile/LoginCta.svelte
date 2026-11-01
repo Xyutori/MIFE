@@ -1,79 +1,79 @@
 <script lang="ts">
-	import { LoaderCircle } from "lucide-svelte";
-	import { onMount } from "svelte";
-	import { authClient } from "#lib/auth-client.ts";
-	import {
-		fetchOAuthProviders,
-		type OAuthProvider,
-		oauthErrorMessage,
-		providerDisplayName,
-		signInWithProvider,
-	} from "#lib/components/auth/oauth.ts";
-	import ProviderLogo from "#lib/components/auth/ProviderLogo.svelte";
+import { LoaderCircle } from "lucide-svelte";
+import { onMount } from "svelte";
+import { authClient } from "#lib/auth-client.ts";
+import {
+	fetchOAuthProviders,
+	type OAuthProvider,
+	oauthErrorMessage,
+	providerDisplayName,
+	signInWithProvider,
+} from "#lib/components/auth/oauth.ts";
+import ProviderLogo from "#lib/components/auth/ProviderLogo.svelte";
 
-	let { callbackPath }: { callbackPath: string } = $props();
+let { callbackPath }: { callbackPath: string } = $props();
 
-	const title = "Masuk dulu yuk";
+const title = "Masuk dulu yuk";
 
-	let providers = $state<OAuthProvider[]>([]);
-	let loading = $state(true);
-	let signingIn = $state("");
-	let error = $state("");
+let providers = $state<OAuthProvider[]>([]);
+let loading = $state(true);
+let signingIn = $state("");
+let error = $state("");
 
-	onMount(() => {
-		const controller = new AbortController();
-		// Samakan dengan halaman login: kegagalan OAuth via redirect (?error=)
-		// maupun pemeriksaan sesi wajib tampil sebagai pesan.
-		const search = new URLSearchParams(window.location.search);
-		const errorCode = search.getAll("error").at(-1);
-		if (errorCode) {
-			error = oauthErrorMessage(
-				errorCode,
-				search.get("error_description"),
-				undefined,
-				providerDisplayName(search.get("provider")),
-			);
-		}
-		void authClient
-			.getSession()
-			.then((result) => {
-				if (result?.error && !error) {
-					error = "Sesi tidak dapat diperiksa. Periksa koneksi lalu coba lagi.";
-				}
-			})
-			.catch(() => {
-				if (!error) {
-					error = "Sesi tidak dapat diperiksa. Periksa koneksi lalu coba lagi.";
-				}
-			});
-		void fetchOAuthProviders(controller.signal)
-			.then((list) => {
-				if (!controller.signal.aborted) providers = list;
-			})
-			.catch((cause: unknown) => {
-				if (!controller.signal.aborted && !error) {
-					error =
-						cause instanceof Error
-							? cause.message
-							: "Provider tidak dapat dimuat.";
-				}
-			})
-			.finally(() => {
-				if (!controller.signal.aborted) loading = false;
-			});
-		return () => controller.abort();
-	});
-
-	async function signIn(provider: OAuthProvider) {
-		signingIn = provider.id;
-		error = "";
-		try {
-			await signInWithProvider(provider, callbackPath);
-		} catch (cause) {
-			error = cause instanceof Error ? cause.message : "Login gagal.";
-			signingIn = "";
-		}
+onMount(() => {
+	const controller = new AbortController();
+	// Samakan dengan halaman login: kegagalan OAuth via redirect (?error=)
+	// maupun pemeriksaan sesi wajib tampil sebagai pesan.
+	const search = new URLSearchParams(window.location.search);
+	const errorCode = search.getAll("error").at(-1);
+	if (errorCode) {
+		error = oauthErrorMessage(
+			errorCode,
+			search.get("error_description"),
+			undefined,
+			providerDisplayName(search.get("provider")),
+		);
 	}
+	void authClient
+		.getSession()
+		.then((result) => {
+			if (result?.error && !error) {
+				error = "Sesi tidak dapat diperiksa. Periksa koneksi lalu coba lagi.";
+			}
+		})
+		.catch(() => {
+			if (!error) {
+				error = "Sesi tidak dapat diperiksa. Periksa koneksi lalu coba lagi.";
+			}
+		});
+	void fetchOAuthProviders(controller.signal)
+		.then((list) => {
+			if (!controller.signal.aborted) providers = list;
+		})
+		.catch((cause: unknown) => {
+			if (!controller.signal.aborted && !error) {
+				error =
+					cause instanceof Error
+						? cause.message
+						: "Provider tidak dapat dimuat.";
+			}
+		})
+		.finally(() => {
+			if (!controller.signal.aborted) loading = false;
+		});
+	return () => controller.abort();
+});
+
+async function signIn(provider: OAuthProvider) {
+	signingIn = provider.id;
+	error = "";
+	try {
+		await signInWithProvider(provider, callbackPath);
+	} catch (cause) {
+		error = cause instanceof Error ? cause.message : "Login gagal.";
+		signingIn = "";
+	}
+}
 </script>
 
 <section

@@ -27,16 +27,16 @@ Platform baca komik & anime dengan scraper otomatis, katalog offline-friendly, d
 
 ## 🧱 Tech Stack
 
-| Lapisan   | Teknologi |
-|-----------|-----------|
-| Monorepo  | Bun workspaces + Nx |
-| Web       | SvelteKit 3 + Svelte 5 runes + Tailwind CSS 4 (CSS-first) |
-| Backend   | Elysia 1.4 di Bun (`/api/*`) |
-| Database  | PostgreSQL 16 + Drizzle ORM (`pgTable`, 35+ tabel, FTS) |
-| Storage   | S3-compatible (MinIO) untuk varian gambar |
-| Auth      | Better Auth 1.7 — social-only (Google, GitHub) |
-| Desktop   | Tauri 2 (frontend = build web statis) |
-| Env       | Varlock codegen (`PORT` web `4001`, server `4000`) |
+| Lapisan  | Teknologi                                                 |
+| -------- | --------------------------------------------------------- |
+| Monorepo | Bun workspaces + Nx                                       |
+| Web      | SvelteKit 3 + Svelte 5 runes + Tailwind CSS 4 (CSS-first) |
+| Backend  | Elysia 1.4 di Bun (`/api/*`)                              |
+| Database | PostgreSQL 16 + Drizzle ORM (`pgTable`, 35+ tabel, FTS)   |
+| Storage  | S3-compatible (MinIO) untuk varian gambar                 |
+| Auth     | Better Auth 1.7 — social-only (Google, GitHub)            |
+| Desktop  | Tauri 2 (frontend = build web statis)                     |
+| Env      | Varlock codegen (`PORT` web `4001`, server `4000`)        |
 
 ## 🚀 Quickstart
 

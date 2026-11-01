@@ -60,7 +60,7 @@ $effect(() => {
 	onclick={() => (drawerOpen = true)}
 	aria-pressed={saved}
 	aria-label={saved ? "Tersimpan di library" : "Simpan ke library"}
-	class={`inline-flex min-h-10 items-center gap-2 rounded-full border px-4 font-semibold text-sm ${saved ? "border-white/25 bg-white/10 text-white" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/10"}`}
+	class={`inline-flex min-h-10 items-center gap-2 rounded-full border px-4 font-semibold text-sm ${saved ? "border-primary/40 bg-primary/10 text-primary" : "border-white/15 bg-white/5 text-white/80 hover:bg-white/10"}`}
 >
 	{#if saved}
 		<BookmarkCheck class="size-4" />

@@ -39,11 +39,11 @@ Separate app definition from startup. Re-export the app from the build entrypoin
 import { Elysia, t } from "elysia";
 
 export const app = new Elysia().get(
-  "/hello/:name",
-  {
-    params: t.Object({ name: t.String({ minLength: 2 }) }),
-  },
-  ({ params }) => `Hello, ${params.name}!`,
+	"/hello/:name",
+	{
+		params: t.Object({ name: t.String({ minLength: 2 }) }),
+	},
+	({ params }) => `Hello, ${params.name}!`,
 );
 
 export type App = typeof app;
@@ -62,15 +62,15 @@ app.listen(3000);
 import { aot } from "elysia/plugin/aot/bun";
 
 const result = await Bun.build({
-  entrypoints: ["src/index.ts"],
-  outdir: "dist",
-  target: "bun",
-  plugins: [aot("src/index.ts", { target: "bun" })],
+	entrypoints: ["src/index.ts"],
+	outdir: "dist",
+	target: "bun",
+	plugins: [aot("src/index.ts", { target: "bun" })],
 });
 
 if (!result.success) {
-  console.error(result.logs);
-  process.exit(1);
+	console.error(result.logs);
+	process.exit(1);
 }
 
 process.exit(0);
@@ -126,7 +126,7 @@ Skip external service initialization during capture without changing route regis
 import { inAotBuild } from "elysia";
 
 if (!inAotBuild()) {
-  // Connect to external services here.
+	// Connect to external services here.
 }
 ```
 
@@ -193,9 +193,9 @@ import { availableParallelism } from "node:os";
 import { app } from "./app";
 
 if (cluster.isPrimary) {
-  for (let i = 0; i < availableParallelism(); i++) cluster.fork();
+	for (let i = 0; i < availableParallelism(); i++) cluster.fork();
 } else {
-  app.listen({ port: 3000, reusePort: true });
+	app.listen({ port: 3000, reusePort: true });
 }
 ```
 

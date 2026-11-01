@@ -12,13 +12,13 @@ import { Html, Body, Text } from "@react-email/components";
 import * as React from "react";
 
 export default function WelcomeEmail({ name }: { name: string }) {
-  return (
-    <Html>
-      <Body>
-        <Text>Welcome, {name}.</Text>
-      </Body>
-    </Html>
-  );
+	return (
+		<Html>
+			<Body>
+				<Text>Welcome, {name}.</Text>
+			</Body>
+		</Html>
+	);
 }
 
 WelcomeEmail.PreviewProps = { name: "Alex" };
@@ -34,22 +34,22 @@ import { renderToStaticMarkup } from "react-dom/server";
 import WelcomeEmail from "./emails/welcome";
 
 const transport = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
+	host: process.env.SMTP_HOST,
+	port: 465,
+	secure: true,
+	auth: {
+		user: process.env.SMTP_USER,
+		pass: process.env.SMTP_PASSWORD,
+	},
 });
 
 export async function sendWelcome(to: string, name: string) {
-  return transport.sendMail({
-    from: process.env.MAIL_FROM,
-    to,
-    subject: "Welcome",
-    html: renderToStaticMarkup(<WelcomeEmail name={name} />),
-  });
+	return transport.sendMail({
+		from: process.env.MAIL_FROM,
+		to,
+		subject: "Welcome",
+		html: renderToStaticMarkup(<WelcomeEmail name={name} />),
+	});
 }
 ```
 

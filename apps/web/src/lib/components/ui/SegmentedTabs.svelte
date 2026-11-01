@@ -1,30 +1,30 @@
 <script lang="ts">
-	export interface SegmentedTab {
-		id: string;
-		label: string;
-	}
+export interface SegmentedTab {
+	id: string;
+	label: string;
+}
 
-	interface Props {
-		tabs: SegmentedTab[];
-		value: string;
-		onChange?: (id: string) => void;
-		ariaLabel: string;
-		class?: string;
-	}
+interface Props {
+	tabs: SegmentedTab[];
+	value: string;
+	onChange?: (id: string) => void;
+	ariaLabel: string;
+	class?: string;
+}
 
-	let {
-		tabs,
-		value = $bindable(),
-		onChange,
-		ariaLabel,
-		class: className = "",
-	}: Props = $props();
+let {
+	tabs,
+	value = $bindable(),
+	onChange,
+	ariaLabel,
+	class: className = "",
+}: Props = $props();
 
-	function select(id: string) {
-		if (id === value) return;
-		value = id;
-		onChange?.(id);
-	}
+function select(id: string) {
+	if (id === value) return;
+	value = id;
+	onChange?.(id);
+}
 </script>
 
 <div

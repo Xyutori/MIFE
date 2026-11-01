@@ -1,59 +1,69 @@
 <script lang="ts">
-	import AdSlot from "#lib/components/comic/AdSlot.svelte";
-	import ChapterRow from "#lib/components/comic/ChapterRow.svelte";
-	import CommentRules from "#lib/components/comic/CommentRules.svelte";
-	import CommentThread from "#lib/components/comic/CommentThread.svelte";
-	import { authClient } from "#lib/auth-client.ts";
-	import { BOOKMARKS_KEY, READLIST_KEY, hasId, toggleId } from "../../_library-store";
-	import type { PageProps } from "./$types";
+import { authClient } from "#lib/auth-client.ts";
+import AdSlot from "#lib/components/comic/AdSlot.svelte";
+import ChapterRow from "#lib/components/comic/ChapterRow.svelte";
+import CommentRules from "#lib/components/comic/CommentRules.svelte";
+import CommentThread from "#lib/components/comic/CommentThread.svelte";
+import {
+	BOOKMARKS_KEY,
+	hasId,
+	READLIST_KEY,
+	toggleId,
+} from "../../_library-store";
+import type { PageProps } from "./$types";
 
-	const CHAPTER_PAGE_SIZE = 20;
+const CHAPTER_PAGE_SIZE = 20;
 
-	let { data }: PageProps = $props();
+let { data }: PageProps = $props();
 
-	const session = authClient.useSession();
+const session = authClient.useSession();
 
-	let contentTab = $state<"chapter" | "novel">("chapter");
-	let chapterQuery = $state("");
-	let chapterPage = $state(1);
-	let synopsisOpen = $state(false);
-	let bookmarked = $state(false);
-	let inReadlist = $state(false);
+let contentTab = $state<"chapter" | "novel">("chapter");
+let chapterQuery = $state("");
+let chapterPage = $state(1);
+let synopsisOpen = $state(false);
+let bookmarked = $state(false);
+let inReadlist = $state(false);
 
-	const filteredChapters = $derived(
-		data.chapters.filter((chapter) => {
-			const q = chapterQuery.trim().toLowerCase();
-			return !q || chapter.number.toLowerCase().includes(q);
-		}),
-	);
-	const chapterPageCount = $derived(Math.max(1, Math.ceil(filteredChapters.length / CHAPTER_PAGE_SIZE)));
-	const currentChapterPage = $derived(Math.min(chapterPage, chapterPageCount));
-	const pagedChapters = $derived(
-		filteredChapters.slice(
-			(currentChapterPage - 1) * CHAPTER_PAGE_SIZE,
-			currentChapterPage * CHAPTER_PAGE_SIZE,
-		),
-	);
+const filteredChapters = $derived(
+	data.chapters.filter((chapter) => {
+		const q = chapterQuery.trim().toLowerCase();
+		return !q || chapter.number.toLowerCase().includes(q);
+	}),
+);
+const chapterPageCount = $derived(
+	Math.max(1, Math.ceil(filteredChapters.length / CHAPTER_PAGE_SIZE)),
+);
+const currentChapterPage = $derived(Math.min(chapterPage, chapterPageCount));
+const pagedChapters = $derived(
+	filteredChapters.slice(
+		(currentChapterPage - 1) * CHAPTER_PAGE_SIZE,
+		currentChapterPage * CHAPTER_PAGE_SIZE,
+	),
+);
 
-	const stats = $derived<{ label: string; value: string }[]>([
-		{ label: "Rating", value: data.series.rating != null ? String(data.series.rating) : "-" },
-		{ label: "Bookmark", value: data.series.bookmarks },
-		{ label: "Views", value: data.series.views },
-		{ label: "Rank", value: `#${data.series.rank}` },
-	]);
+const stats = $derived<{ label: string; value: string }[]>([
+	{
+		label: "Rating",
+		value: data.series.rating != null ? String(data.series.rating) : "-",
+	},
+	{ label: "Bookmark", value: data.series.bookmarks },
+	{ label: "Views", value: data.series.views },
+	{ label: "Rank", value: `#${data.series.rank}` },
+]);
 
-	$effect(() => {
-		bookmarked = hasId(BOOKMARKS_KEY, data.series.id);
-		inReadlist = hasId(READLIST_KEY, data.series.id);
-	});
+$effect(() => {
+	bookmarked = hasId(BOOKMARKS_KEY, data.series.id);
+	inReadlist = hasId(READLIST_KEY, data.series.id);
+});
 
-	function toggleBookmark(): void {
-		bookmarked = toggleId(BOOKMARKS_KEY, data.series.id);
-	}
+function toggleBookmark(): void {
+	bookmarked = toggleId(BOOKMARKS_KEY, data.series.id);
+}
 
-	function toggleReadlist(): void {
-		inReadlist = toggleId(READLIST_KEY, data.series.id);
-	}
+function toggleReadlist(): void {
+	inReadlist = toggleId(READLIST_KEY, data.series.id);
+}
 </script>
 
 <div class="mx-auto w-full max-w-[1440px] space-y-8 px-4 pb-28 pt-6 lg:pb-12">

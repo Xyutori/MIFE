@@ -20,15 +20,15 @@ Select compatible `elysia` and `@elysia/eden` releases from [versions.md](versio
 import { Elysia, t } from "elysia";
 
 export const app = new Elysia()
-  .get("/hi", () => "Hello")
-  .get("/users/:id", ({ params }) => params.id)
-  .post(
-    "/mirror",
-    {
-      body: t.Object({ id: t.Number(), name: t.String() }),
-    },
-    ({ body }) => body,
-  );
+	.get("/hi", () => "Hello")
+	.get("/users/:id", ({ params }) => params.id)
+	.post(
+		"/mirror",
+		{
+			body: t.Object({ id: t.Number(), name: t.String() }),
+		},
+		({ body }) => body,
+	);
 
 export type App = typeof app;
 ```
@@ -118,14 +118,15 @@ import { treaty } from "@elysia/eden";
 import { Elysia } from "elysia";
 
 const app = new Elysia().get("/users/:id", ({ params, status }) => {
-  if (params.id === "missing") return status(404, { message: "User not found" });
-  return { id: params.id };
+	if (params.id === "missing")
+		return status(404, { message: "User not found" });
+	return { id: params.id };
 });
 
 const { data, error } = await treaty(app).users({ id: "missing" }).get();
 if (error) {
-  if (error.status === 404) console.log(error.value.message);
-  throw error;
+	if (error.status === 404) console.log(error.value.message);
+	throw error;
 }
 console.log(data.id);
 ```
@@ -141,7 +142,7 @@ import { treaty } from "@elysia/eden";
 import { Elysia, sse } from "elysia";
 
 const app = new Elysia().get("/events", function* () {
-  yield sse({ event: "message", data: "Hello" });
+	yield sse({ event: "message", data: "Hello" });
 });
 
 const { data, error } = await treaty(app).events.get();
@@ -176,9 +177,9 @@ type MirrorError = Treaty.Error<typeof api.mirror.post>;
 
 ```ts
 const api = treaty<App>("https://api.example.com", {
-  fetch: { credentials: "include" },
-  headers: { "x-client": "web" },
-  throwHttpError: (error) => error.status === 503,
+	fetch: { credentials: "include" },
+	headers: { "x-client": "web" },
+	throwHttpError: (error) => error.status === 503,
 });
 ```
 
@@ -195,18 +196,18 @@ import { createPlugin, treaty } from "@elysia/eden";
 import { Elysia } from "elysia";
 
 const routeInfo = createPlugin({
-  name: "route-info",
-  verbs: {
-    routePath(context) {
-      return context.path;
-    },
-  },
-  before(context) {
-    console.log("Sending", context.method, context.paths);
-  },
-  after(result, context) {
-    console.log("Received", context.method, result.status);
-  },
+	name: "route-info",
+	verbs: {
+		routePath(context) {
+			return context.path;
+		},
+	},
+	before(context) {
+		console.log("Sending", context.method, context.paths);
+	},
+	after(result, context) {
+		console.log("Received", context.method, result.status);
+	},
 });
 
 const app = new Elysia().get("/users/:id", ({ params }) => params.id);
@@ -233,15 +234,15 @@ import { Elysia, t } from "elysia";
 import { websocket } from "elysia/websocket";
 
 const app = new Elysia()
-  .use(websocket())
-  .ws("/chat", {
-    body: t.String(),
-    response: t.String(),
-    message({ body }) {
-      return body;
-    },
-  })
-  .listen(3000);
+	.use(websocket())
+	.ws("/chat", {
+		body: t.String(),
+		response: t.String(),
+		message({ body }) {
+			return body;
+		},
+	})
+	.listen(3000);
 
 const chat = treaty<typeof app>("http://localhost:3000").chat.subscribe();
 chat.subscribe((message) => console.log(message.data));
@@ -262,8 +263,8 @@ import type { App } from "./server/app";
 const apiFetch = edenFetch<App>("http://localhost:3000");
 await apiFetch("/users/:id", { params: { id: "1" } });
 const { data, error } = await apiFetch("/mirror", {
-  method: "POST",
-  body: { id: 1, name: "Elysia" },
+	method: "POST",
+	body: { id: 1, name: "Elysia" },
 });
 if (error) throw error;
 console.log(data.name);

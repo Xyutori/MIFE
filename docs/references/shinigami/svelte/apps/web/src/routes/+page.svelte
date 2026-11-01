@@ -1,81 +1,89 @@
 <script lang="ts">
-	import AnnouncementCard from "#lib/components/comic/AnnouncementCard.svelte";
-	import BannerHero from "#lib/components/comic/BannerHero.svelte";
-	import SeriesCard from "#lib/components/comic/SeriesCard.svelte";
-	import { mockAnnouncements, mockBanners, mockSeries } from "./_mock";
-	import type { Country, UpdateKind } from "./_mock";
+import AnnouncementCard from "#lib/components/comic/AnnouncementCard.svelte";
+import BannerHero from "#lib/components/comic/BannerHero.svelte";
+import SeriesCard from "#lib/components/comic/SeriesCard.svelte";
+import type { Country, UpdateKind } from "./_mock";
+import { mockAnnouncements, mockBanners, mockSeries } from "./_mock";
 
-	type PopularTab = "harian" | "mingguan" | "semua";
+type PopularTab = "harian" | "mingguan" | "semua";
 
-	const PAGE_SIZE = 12;
+const PAGE_SIZE = 12;
 
-	const REC_TABS: { id: Country; label: string }[] = [
-		{ id: "KR", label: "Manhwa" },
-		{ id: "JP", label: "Manga" },
-		{ id: "CN", label: "Manhua" },
-	];
-	const UPDATE_TABS: { id: UpdateKind; label: string }[] = [
-		{ id: "project", label: "Project" },
-		{ id: "mirror", label: "Mirror" },
-	];
-	const POPULAR_TABS: { id: PopularTab; label: string }[] = [
-		{ id: "harian", label: "Harian" },
-		{ id: "mingguan", label: "Mingguan" },
-		{ id: "semua", label: "Semua" },
-	];
+const REC_TABS: { id: Country; label: string }[] = [
+	{ id: "KR", label: "Manhwa" },
+	{ id: "JP", label: "Manga" },
+	{ id: "CN", label: "Manhua" },
+];
+const UPDATE_TABS: { id: UpdateKind; label: string }[] = [
+	{ id: "project", label: "Project" },
+	{ id: "mirror", label: "Mirror" },
+];
+const POPULAR_TABS: { id: PopularTab; label: string }[] = [
+	{ id: "harian", label: "Harian" },
+	{ id: "mingguan", label: "Mingguan" },
+	{ id: "semua", label: "Semua" },
+];
 
-	let recTab = $state<Country>("KR");
-	let updateTab = $state<UpdateKind>("project");
-	let listView = $state(false);
-	let updatePage = $state(1);
-	let popularTab = $state<PopularTab>("harian");
-	let popularLoading = $state(true);
+let recTab = $state<Country>("KR");
+let updateTab = $state<UpdateKind>("project");
+let listView = $state(false);
+let updatePage = $state(1);
+let popularTab = $state<PopularTab>("harian");
+let popularLoading = $state(true);
 
-	const latestAnnouncements = mockAnnouncements.slice(0, 2);
+const latestAnnouncements = mockAnnouncements.slice(0, 2);
 
-	const recommendations = $derived(mockSeries.filter((s) => s.country === recTab).slice(0, 10));
+const recommendations = $derived(
+	mockSeries.filter((s) => s.country === recTab).slice(0, 10),
+);
 
-	const updates = $derived(mockSeries.filter((s) => s.kind === updateTab));
-	const updatePageCount = $derived(Math.max(1, Math.ceil(updates.length / PAGE_SIZE)));
-	const currentPage = $derived(Math.min(updatePage, updatePageCount));
-	const pagedUpdates = $derived(updates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE));
-	const pageNumbers = $derived(
-		Array.from({ length: updatePageCount }, (_, i) => i + 1).filter(
-			(n) => n === 1 || n === updatePageCount || Math.abs(n - currentPage) <= 1,
-		),
-	);
+const updates = $derived(mockSeries.filter((s) => s.kind === updateTab));
+const updatePageCount = $derived(
+	Math.max(1, Math.ceil(updates.length / PAGE_SIZE)),
+);
+const currentPage = $derived(Math.min(updatePage, updatePageCount));
+const pagedUpdates = $derived(
+	updates.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+);
+const pageNumbers = $derived(
+	Array.from({ length: updatePageCount }, (_, i) => i + 1).filter(
+		(n) => n === 1 || n === updatePageCount || Math.abs(n - currentPage) <= 1,
+	),
+);
 
-	const popular = $derived.by(() => {
-		if (popularTab === "semua") {
-			return [...mockSeries].sort((a, b) => Number(b.rating ?? 0) - Number(a.rating ?? 0)).slice(0, 6);
-		}
-		const offset = popularTab === "harian" ? 0 : 6;
-		return mockSeries.slice(offset, offset + 6);
-	});
-
-	function tabClass(active: boolean): string {
-		return active
-			? "bg-[#E01B41] text-white"
-			: "bg-neutral-800 text-neutral-300 hover:bg-neutral-700";
+const popular = $derived.by(() => {
+	if (popularTab === "semua") {
+		return [...mockSeries]
+			.sort((a, b) => Number(b.rating ?? 0) - Number(a.rating ?? 0))
+			.slice(0, 6);
 	}
+	const offset = popularTab === "harian" ? 0 : 6;
+	return mockSeries.slice(offset, offset + 6);
+});
 
-	function selectUpdateTab(tab: UpdateKind): void {
-		updateTab = tab;
-		updatePage = 1;
-	}
+function tabClass(active: boolean): string {
+	return active
+		? "bg-[#E01B41] text-white"
+		: "bg-neutral-800 text-neutral-300 hover:bg-neutral-700";
+}
 
-	function goToPage(page: number): void {
-		updatePage = Math.min(Math.max(1, page), updatePageCount);
-	}
+function selectUpdateTab(tab: UpdateKind): void {
+	updateTab = tab;
+	updatePage = 1;
+}
 
-	$effect(() => {
-		void popularTab;
-		popularLoading = true;
-		const timer = setTimeout(() => {
-			popularLoading = false;
-		}, 600);
-		return () => clearTimeout(timer);
-	});
+function goToPage(page: number): void {
+	updatePage = Math.min(Math.max(1, page), updatePageCount);
+}
+
+$effect(() => {
+	void popularTab;
+	popularLoading = true;
+	const timer = setTimeout(() => {
+		popularLoading = false;
+	}, 600);
+	return () => clearTimeout(timer);
+});
 </script>
 
 <div class="mx-auto w-full max-w-[1440px] space-y-8 px-4 pb-28 pt-6 lg:pb-12">

@@ -262,7 +262,10 @@ function chapterUrl(
 		const match = url.pathname.match(/^(.*\/chapter\/)([^/]+)\/?$/i);
 		if (!match) return absoluteUrl;
 
-		const segment = decodeURIComponent(match[2]!);
+		const rawSegment = match[2];
+		if (!rawSegment) return absoluteUrl;
+
+		const segment = decodeURIComponent(rawSegment);
 		const slugNumber = segment.match(/^chapter-(.+)$/i)?.[1];
 		if (!slugNumber) return absoluteUrl;
 

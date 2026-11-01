@@ -16,7 +16,10 @@ Related references own [validation](validation.md), [lifecycle](lifecycle.md), [
 ```ts
 import { Elysia } from "elysia";
 
-const app = new Elysia({ prefix: "/v1", strictPath: true }).get("/health", () => ({ ok: true }));
+const app = new Elysia({ prefix: "/v1", strictPath: true }).get(
+	"/health",
+	() => ({ ok: true }),
+);
 ```
 
 | Option                         | Default           | Effect                                                                                                                                                                                                                                   |
@@ -41,8 +44,8 @@ See [migration.md](migration.md) for removed constructor options, including `aot
 
 ```ts
 const app = new Elysia({ serve: { idleTimeout: 60 } })
-  .get("/", () => "Hello")
-  .listen({ port: 3000, hostname: "0.0.0.0" });
+	.get("/", () => "Hello")
+	.listen({ port: 3000, hostname: "0.0.0.0" });
 ```
 
 | API                          | Behavior                                                                                                                                              |
@@ -75,21 +78,21 @@ Use `.get(path, options, handler)` in v2. Omit unused `options`. A handler is a 
 
 ```ts
 new Elysia()
-  .get("/health", "ok")
-  .get(
-    "/users/:id",
-    {
-      params: t.Object({ id: t.Number() }),
-    },
-    ({ params }) => ({ id: params.id }),
-  )
-  .post(
-    "/users",
-    {
-      body: t.Object({ name: t.String() }),
-    },
-    ({ body, status }) => status(201, body),
-  );
+	.get("/health", "ok")
+	.get(
+		"/users/:id",
+		{
+			params: t.Object({ id: t.Number() }),
+		},
+		({ params }) => ({ id: params.id }),
+	)
+	.post(
+		"/users",
+		{
+			body: t.Object({ name: t.String() }),
+		},
+		({ body, status }) => status(201, body),
+	);
 ```
 
 | Path                  | Matched value                                                             |
@@ -144,13 +147,13 @@ Field availability depends on the [lifecycle stage](lifecycle.md#stage-order).
 
 ```ts
 new Elysia()
-  .state("requests", 0)
-  .decorate("greet", (name: string) => `Hello ${name}`)
-  .derive(({ query }) => ({ name: query.name ?? "friend" }))
-  .get("/", ({ store, greet, name }) => {
-    store.requests++;
-    return greet(name);
-  });
+	.state("requests", 0)
+	.decorate("greet", (name: string) => `Hello ${name}`)
+	.derive(({ query }) => ({ name: query.name ?? "friend" }))
+	.get("/", ({ store, greet, name }) => {
+		store.requests++;
+		return greet(name);
+	});
 ```
 
 Keep request values out of `store` and decorated objects. The `app.store` getter is removed. See [composition.md](composition.md) for dependencies and propagation.
@@ -167,17 +170,17 @@ Return `status(code, body)` to pair a status with its response type. `status('Co
 
 ```ts
 new Elysia().get(
-  "/tea",
-  {
-    response: {
-      200: t.Object({ name: t.String() }),
-      404: t.String(),
-    },
-  },
-  ({ query, status }) => {
-    if (query.name !== "earl-grey") return status(404, "Tea not found");
-    return { name: "Earl Grey" };
-  },
+	"/tea",
+	{
+		response: {
+			200: t.Object({ name: t.String() }),
+			404: t.String(),
+		},
+	},
+	({ query, status }) => {
+		if (query.name !== "earl-grey") return status(404, "Tea not found");
+		return { name: "Earl Grey" };
+	},
 );
 ```
 
@@ -195,17 +198,17 @@ Return `redirect('/new-path', 301)` to set the `Location` header. The default st
 import { Elysia, file, form, sse } from "elysia";
 
 new Elysia()
-  .get("/portrait", () => file("portrait.webp"))
-  .get("/album", () =>
-    form({
-      name: "Album",
-      images: [file("portrait.webp")],
-    }),
-  )
-  .get("/events", function* () {
-    yield sse("Preparing");
-    yield sse({ event: "ready", data: { ready: true } });
-  });
+	.get("/portrait", () => file("portrait.webp"))
+	.get("/album", () =>
+		form({
+			name: "Album",
+			images: [file("portrait.webp")],
+		}),
+	)
+	.get("/events", function* () {
+		yield sse("Preparing");
+		yield sse({ event: "ready", data: { ready: true } });
+	});
 ```
 
 `form()` creates a multipart response with text and file fields, one level deep. Use `file()` directly for one file.

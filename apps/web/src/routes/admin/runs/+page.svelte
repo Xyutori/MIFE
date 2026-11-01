@@ -1,19 +1,19 @@
 <script lang="ts">
-	import ComicScrapePanel from "#lib/components/admin/ComicScrapePanel.svelte";
-	import ScrapeRunsPanel from "#lib/components/admin/ScrapeRunsPanel.svelte";
-	import ScrapeSchedulePanel from "#lib/components/admin/ScrapeSchedulePanel.svelte";
-	import SuperKomikJobsPanel from "#lib/components/admin/SuperKomikJobsPanel.svelte";
-	import SegmentedTabs from "#lib/components/ui/SegmentedTabs.svelte";
+import ComicScrapePanel from "#lib/components/admin/ComicScrapePanel.svelte";
+import ScrapeRunsPanel from "#lib/components/admin/ScrapeRunsPanel.svelte";
+import ScrapeSchedulePanel from "#lib/components/admin/ScrapeSchedulePanel.svelte";
+import SuperKomikJobsPanel from "#lib/components/admin/SuperKomikJobsPanel.svelte";
+import SegmentedTabs from "#lib/components/ui/SegmentedTabs.svelte";
 
-	type Tab = "anime" | "comic" | "super";
+type Tab = "anime" | "comic" | "super";
 
-	let tab = $state<Tab>("anime");
+let tab = $state<Tab>("anime");
 
-	const tabs: Array<{ id: Tab; label: string }> = [
-		{ id: "anime", label: "Anime" },
-		{ id: "comic", label: "Komik" },
-		{ id: "super", label: "Super Komik" },
-	];
+const tabs: Array<{ id: Tab; label: string }> = [
+	{ id: "anime", label: "Anime" },
+	{ id: "comic", label: "Komik" },
+	{ id: "super", label: "Super Komik" },
+];
 </script>
 
 <svelte:head>

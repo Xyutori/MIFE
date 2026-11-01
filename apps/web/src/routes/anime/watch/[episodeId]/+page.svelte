@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { page } from "$app/state";
-	import AnimeWatchView from "#lib/components/anime/AnimeWatchView.svelte";
+import AnimeWatchView from "#lib/components/anime/AnimeWatchView.svelte";
+import CommentSection from "#lib/components/comments/CommentSection.svelte";
+import { page } from "$app/state";
 
-	const episodeId = $derived(page.params.episodeId ?? "");
+const episodeId = $derived(page.params.episodeId ?? "");
 </script>
 
 <svelte:head>
@@ -15,4 +16,5 @@
 
 {#key episodeId}
 	<AnimeWatchView {episodeId} />
+	<CommentSection targetType="anime_episode" targetId={episodeId} />
 {/key}

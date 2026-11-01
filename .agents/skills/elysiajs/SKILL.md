@@ -1,4 +1,5 @@
 ---
+
 name: elysiajs
 description: Build, debug, or migrate Elysia v2 TypeScript backends with validation, plugins, typed clients, and deployment. Use for Elysia projects or explicit Elysia requests.
 ---
@@ -38,11 +39,11 @@ Use the project's test runner. This Bun example opens no port.
 import { Elysia, t } from "elysia";
 
 export const app = new Elysia().get(
-  "/users/:id",
-  {
-    params: t.Object({ id: t.Number() }),
-  },
-  ({ params }) => ({ id: params.id }),
+	"/users/:id",
+	{
+		params: t.Object({ id: t.Number() }),
+	},
+	({ params }) => ({ id: params.id }),
 );
 
 export type App = typeof app;
@@ -55,10 +56,10 @@ import { expect, test } from "bun:test";
 import { app } from "../src/app";
 
 test("coerces the id and rejects nonnumeric input", async () => {
-  const response = await app.handle("/users/42");
-  expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ id: 42 });
-  expect((await app.handle("/users/nope")).status).toBe(422);
+	const response = await app.handle("/users/42");
+	expect(response.status).toBe(200);
+	expect(await response.json()).toEqual({ id: 42 });
+	expect((await app.handle("/users/nope")).status).toBe(422);
 });
 ```
 

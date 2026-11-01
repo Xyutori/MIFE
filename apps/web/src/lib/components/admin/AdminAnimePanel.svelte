@@ -7,11 +7,7 @@ import {
 	X,
 } from "lucide-svelte";
 import { onMount } from "svelte";
-import {
-	type AnimeListItem,
-	decodeEntities,
-	requestJson,
-} from "#lib/admin.ts";
+import { type AnimeListItem, decodeEntities, requestJson } from "#lib/admin.ts";
 import { apiBase, fetchJsonCached } from "#lib/api.ts";
 import AnimeCard from "#lib/components/anime/AnimeCard.svelte";
 import AnimeFilterPanel from "#lib/components/anime/AnimeFilterPanel.svelte";

@@ -11,12 +11,12 @@ import { openapi } from "@elysia/openapi";
 import { Elysia, t } from "elysia";
 
 export const app = new Elysia().use(openapi()).post(
-  "/messages",
-  {
-    body: t.Object({ text: t.String() }),
-    response: t.Object({ text: t.String() }),
-  },
-  ({ body }) => body,
+	"/messages",
+	{
+		body: t.Object({ text: t.String() }),
+		response: t.Object({ text: t.String() }),
+	},
+	({ body }) => body,
 );
 ```
 
@@ -33,17 +33,17 @@ import { openapi, fromTypes } from "@elysia/openapi";
 import { Elysia } from "elysia";
 
 export const app = new Elysia()
-  .use(openapi({ references: fromTypes("src/index.ts") }))
-  .get("/message", () => ({ text: "Hello" }));
+	.use(openapi({ references: fromTypes("src/index.ts") }))
+	.get("/message", () => ({ text: "Hello" }));
 ```
 
 `fromTypes` resolves paths from `projectRoot`, which defaults to the working directory. Set `projectRoot` and `tsconfigPath` explicitly in monorepos. Set `instanceName` when the target exports multiple Elysia instances.
 
 ```ts
 fromTypes("src/index.ts", {
-  projectRoot: "/absolute/path/to/app",
-  tsconfigPath: "tsconfig.json",
-  instanceName: "app",
+	projectRoot: "/absolute/path/to/app",
+	tsconfigPath: "tsconfig.json",
+	instanceName: "app",
 });
 ```
 
@@ -61,16 +61,16 @@ It's recommended to add `fromTypes` when setting up OpenAPI. It ensures the docu
 import { Elysia, t } from "elysia";
 
 new Elysia().post(
-  "/messages",
-  {
-    body: t.Object({ text: t.String({ description: "Message text" }) }),
-    detail: {
-      summary: "Create a message",
-      tags: ["Messages"],
-      deprecated: false,
-    },
-  },
-  ({ body }) => body,
+	"/messages",
+	{
+		body: t.Object({ text: t.String({ description: "Message text" }) }),
+		detail: {
+			summary: "Create a message",
+			tags: ["Messages"],
+			deprecated: false,
+		},
+	},
+	({ body }) => body,
 );
 ```
 
@@ -80,14 +80,14 @@ Security metadata documents authentication but does not enforce it:
 
 ```ts
 openapi({
-  documentation: {
-    info: { title: "Messages API", version: "1.0.0" },
-    components: {
-      securitySchemes: {
-        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
-      },
-    },
-  },
+	documentation: {
+		info: { title: "Messages API", version: "1.0.0" },
+		components: {
+			securitySchemes: {
+				bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+			},
+		},
+	},
 });
 ```
 
@@ -100,14 +100,14 @@ import { withHeaders } from "@elysia/openapi";
 import { Elysia, t } from "elysia";
 
 new Elysia().get(
-  "/message",
-  {
-    response: withHeaders(t.String(), { "x-source": t.String() }),
-  },
-  ({ set }) => {
-    set.headers["x-source"] = "example";
-    return "Hello";
-  },
+	"/message",
+	{
+		response: withHeaders(t.String(), { "x-source": t.String() }),
+	},
+	({ set }) => {
+		set.headers["x-source"] = "example";
+		return "Hello";
+	},
 );
 ```
 

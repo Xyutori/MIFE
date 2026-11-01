@@ -33,6 +33,11 @@ import {
 	waitForRunResume,
 } from "./control";
 import { downloadUrlToBlob } from "./images";
+import {
+	type DueSlot,
+	isSourceDueForSlot,
+	todayInZone,
+} from "./schedule-slots";
 import { normalizeTitle } from "./store";
 import {
 	claimRunWorkerToken,
@@ -784,10 +789,10 @@ export async function retryAnimeScrape(runId: string) {
 	return started.run;
 }
 
-export async function runScheduledAnimeScrapeForToday(timeZone: string) {
-	const today = new Intl.DateTimeFormat("sv-SE", { timeZone }).format(
-		new Date(),
-	);
+export async function runScheduledAnimeScrapeForToday(
+	timeZone: string,
+	slot: DueSlot = { today: todayInZone(timeZone), time: "20:00" },
+) {
 	const sourceRows = await db
 		.select()
 		.from(sources)
@@ -804,7 +809,7 @@ export async function runScheduledAnimeScrapeForToday(timeZone: string) {
 			.from(sourceScrapeState)
 			.where(eq(sourceScrapeState.sourceId, source.id))
 			.limit(1);
-		if (state[0]?.lastAutoScrapeDate === today) continue;
+		if (!isSourceDueForSlot(state[0], slot)) continue;
 		due.push(source);
 	}
 	if (due.length === 0) return [];
@@ -831,7 +836,11 @@ export async function runScheduledAnimeScrapeForToday(timeZone: string) {
 		}
 		await db
 			.update(sourceScrapeState)
-			.set({ lastAutoScrapeDate: today, updatedAt: now() })
+			.set({
+				lastAutoScrapeDate: slot.today,
+				lastAutoScrapeSlot: slot.time,
+				updatedAt: now(),
+			})
 			.where(eq(sourceScrapeState.sourceId, source.id));
 	}
 	return runs;

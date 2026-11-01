@@ -46,6 +46,11 @@ import {
 	setMetadataProgressTotal,
 } from "./metadata-progress";
 import {
+	type DueSlot,
+	isSourceDueForSlot,
+	todayInZone,
+} from "./schedule-slots";
+import {
 	saveChapterPageUrls,
 	saveChapters,
 	saveSeries,
@@ -468,14 +473,18 @@ async function runForSource(
 		]),
 	);
 	const startedAt = now();
-	let progressTotal =
-		mode === "full" ? metadataProgressCounts(cursor.fullProgress!).total : 0;
-	let progressCompleted =
-		mode === "full"
-			? metadataProgressCounts(cursor.fullProgress!).completed
-			: 0;
-	let progressFailed =
-		mode === "full" ? metadataProgressCounts(cursor.fullProgress!).failed : 0;
+	let progressTotal = 0;
+	let progressCompleted = 0;
+	let progressFailed = 0;
+	if (mode === "full") {
+		const ledger = cursor.fullProgress;
+		if (!ledger)
+			throw new Error("Ledger fullProgress tidak tersedia untuk scrape full");
+		const counts = metadataProgressCounts(ledger);
+		progressTotal = counts.total;
+		progressCompleted = counts.completed;
+		progressFailed = counts.failed;
+	}
 	let processedSeries = 0;
 	let savedChapters = 0;
 	let unchangedSeries = 0;
@@ -618,11 +627,12 @@ async function runForSource(
 				totalPages = result.totalPages;
 				categoryHasReliableUpdateDates ||= hasReliableUpdateDates(result.items);
 				if (mode === "full" && page === 1) {
-					setMetadataProgressTotal(
-						cursor.fullProgress!,
-						categoryKey,
-						result.totalRecords,
-					);
+					const ledger = cursor.fullProgress;
+					if (!ledger)
+						throw new Error(
+							"Ledger fullProgress tidak tersedia untuk scrape full",
+						);
+					setMetadataProgressTotal(ledger, categoryKey, result.totalRecords);
 					refreshFullProgress();
 					await db
 						.update(sourceScrapeState)
@@ -941,7 +951,12 @@ async function runForSource(
 					};
 				if (legacyResumePage === `${categoryKey}:${page}`) {
 					legacyResumePage = undefined;
-					cursor.fullProgress!.legacyUnaccountedPage = undefined;
+					const ledger = cursor.fullProgress;
+					if (!ledger)
+						throw new Error(
+							"Ledger fullProgress tidak tersedia untuk scrape full",
+						);
+					ledger.legacyUnaccountedPage = undefined;
 				}
 				cursor.pendingSeries = [...pendingSeries.values()];
 				await db
@@ -1208,10 +1223,8 @@ export async function retryMetadataRun(runId: string) {
 export async function runScheduledScrapeForToday(
 	workspaceId: string = COMIC_WORKSPACE_ID,
 	timeZone = "Asia/Jakarta",
+	slot: DueSlot = { today: todayInZone(timeZone), time: "20:00" },
 ) {
-	const today = new Intl.DateTimeFormat("sv-SE", {
-		timeZone,
-	}).format(new Date());
 	const sourceRows = await db
 		.select()
 		.from(sources)
@@ -1226,7 +1239,7 @@ export async function runScheduledScrapeForToday(
 			.from(sourceScrapeState)
 			.where(eq(sourceScrapeState.sourceId, source.id))
 			.limit(1);
-		if (state[0]?.lastAutoScrapeDate === today) continue;
+		if (!isSourceDueForSlot(state[0], slot)) continue;
 		due.push(source);
 	}
 
@@ -1256,7 +1269,11 @@ export async function runScheduledScrapeForToday(
 		}
 		await db
 			.update(sourceScrapeState)
-			.set({ lastAutoScrapeDate: today, updatedAt: now() })
+			.set({
+				lastAutoScrapeDate: slot.today,
+				lastAutoScrapeSlot: slot.time,
+				updatedAt: now(),
+			})
 			.where(eq(sourceScrapeState.sourceId, source.id));
 	}
 	return runs;

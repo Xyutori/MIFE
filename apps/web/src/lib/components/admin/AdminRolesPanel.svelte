@@ -1,116 +1,116 @@
 <script lang="ts">
-	import { type PermissionItem, type RoleItem, requestJson } from "#lib/admin.ts";
-	import ErrorState from "#lib/components/admin/ErrorState.svelte";
+import { type PermissionItem, type RoleItem, requestJson } from "#lib/admin.ts";
+import ErrorState from "#lib/components/admin/ErrorState.svelte";
 
-	type RoleRow = RoleItem & { members?: number };
+type RoleRow = RoleItem & { members?: number };
 
-	let roles = $state<RoleRow[]>([]);
-	let permissions = $state<PermissionItem[]>([]);
-	let selected = $state("");
-	let loading = $state(true);
-	let error = $state("");
-	let message = $state("");
-	let editing = $state(false);
-	let editLabel = $state("");
-	let editDescription = $state("");
-	let editPermissions = $state<string[]>([]);
-	let saving = $state(false);
-	let editError = $state("");
+let roles = $state<RoleRow[]>([]);
+let permissions = $state<PermissionItem[]>([]);
+let selected = $state("");
+let loading = $state(true);
+let error = $state("");
+let message = $state("");
+let editing = $state(false);
+let editLabel = $state("");
+let editDescription = $state("");
+let editPermissions = $state<string[]>([]);
+let saving = $state(false);
+let editError = $state("");
 
-	const active = $derived(
-		roles.find((role) => role.key === selected) ?? roles[0] ?? null,
-	);
+const active = $derived(
+	roles.find((role) => role.key === selected) ?? roles[0] ?? null,
+);
 
-	const activePermissions = $derived.by(() => {
-		const fromRole = active?.permissions;
-		if (fromRole && fromRole.length > 0) return fromRole;
-		if (active?.key === "admin")
-			return permissions.map((item) => ({ key: item.key, label: item.label }));
-		return [];
-	});
+const activePermissions = $derived.by(() => {
+	const fromRole = active?.permissions;
+	if (fromRole && fromRole.length > 0) return fromRole;
+	if (active?.key === "admin")
+		return permissions.map((item) => ({ key: item.key, label: item.label }));
+	return [];
+});
 
-	async function load(signal?: AbortSignal) {
-		loading = true;
-		error = "";
-		try {
-			const [roleData, permissionData] = await Promise.all([
-				requestJson<{ roles?: RoleRow[] }>("/api/admin/roles", { signal }),
-				requestJson<{ permissions?: PermissionItem[] }>(
-					"/api/admin/permissions",
-					{ signal },
-				),
-			]);
-			const list = Array.isArray(roleData.roles) ? roleData.roles : [];
-			roles = list;
-			permissions = Array.isArray(permissionData.permissions)
-				? permissionData.permissions
-				: [];
-			if (!list.some((role) => role.key === selected) && list[0]) {
-				selected = list[0].key;
-			}
-		} catch (cause) {
-			if ((cause as Error)?.name === "AbortError") return;
-			error = cause instanceof Error ? cause.message : "Role gagal dimuat.";
-		} finally {
-			loading = false;
+async function load(signal?: AbortSignal) {
+	loading = true;
+	error = "";
+	try {
+		const [roleData, permissionData] = await Promise.all([
+			requestJson<{ roles?: RoleRow[] }>("/api/admin/roles", { signal }),
+			requestJson<{ permissions?: PermissionItem[] }>(
+				"/api/admin/permissions",
+				{ signal },
+			),
+		]);
+		const list = Array.isArray(roleData.roles) ? roleData.roles : [];
+		roles = list;
+		permissions = Array.isArray(permissionData.permissions)
+			? permissionData.permissions
+			: [];
+		if (!list.some((role) => role.key === selected) && list[0]) {
+			selected = list[0].key;
 		}
+	} catch (cause) {
+		if ((cause as Error)?.name === "AbortError") return;
+		error = cause instanceof Error ? cause.message : "Role gagal dimuat.";
+	} finally {
+		loading = false;
 	}
+}
 
-	function openEdit() {
-		if (!active) return;
-		editLabel = active.label;
-		editDescription = active.description ?? "";
-		const granted = new Set((active.permissions ?? []).map((p) => p.key));
-		// Admin selalu memegang semua permission (bypass di server);
-		// tampilkan centang penuh agar tidak menyesatkan.
-		editPermissions =
-			active.key === "admin" && granted.size === 0
-				? permissions.map((p) => p.key)
-				: permissions.map((p) => p.key).filter((key) => granted.has(key));
-		editError = "";
-		editing = true;
+function openEdit() {
+	if (!active) return;
+	editLabel = active.label;
+	editDescription = active.description ?? "";
+	const granted = new Set((active.permissions ?? []).map((p) => p.key));
+	// Admin selalu memegang semua permission (bypass di server);
+	// tampilkan centang penuh agar tidak menyesatkan.
+	editPermissions =
+		active.key === "admin" && granted.size === 0
+			? permissions.map((p) => p.key)
+			: permissions.map((p) => p.key).filter((key) => granted.has(key));
+	editError = "";
+	editing = true;
+}
+
+function togglePermission(key: string) {
+	editPermissions = editPermissions.includes(key)
+		? editPermissions.filter((item) => item !== key)
+		: [...editPermissions, key];
+}
+
+async function saveEdit() {
+	if (!active || saving) return;
+	const label = editLabel.trim();
+	if (!label) {
+		editError = "Label role wajib diisi.";
+		return;
 	}
-
-	function togglePermission(key: string) {
-		editPermissions = editPermissions.includes(key)
-			? editPermissions.filter((item) => item !== key)
-			: [...editPermissions, key];
+	saving = true;
+	editError = "";
+	try {
+		await requestJson(`/api/admin/roles/${encodeURIComponent(active.key)}`, {
+			method: "PATCH",
+			body: JSON.stringify({
+				label,
+				description: editDescription.trim() ? editDescription.trim() : null,
+				permissions: editPermissions,
+			}),
+		});
+		message = "Role diperbarui.";
+		editing = false;
+		await load();
+	} catch (cause) {
+		editError =
+			cause instanceof Error ? cause.message : "Role gagal diperbarui.";
+	} finally {
+		saving = false;
 	}
+}
 
-	async function saveEdit() {
-		if (!active || saving) return;
-		const label = editLabel.trim();
-		if (!label) {
-			editError = "Label role wajib diisi.";
-			return;
-		}
-		saving = true;
-		editError = "";
-		try {
-			await requestJson(`/api/admin/roles/${encodeURIComponent(active.key)}`, {
-				method: "PATCH",
-				body: JSON.stringify({
-					label,
-					description: editDescription.trim() ? editDescription.trim() : null,
-					permissions: editPermissions,
-				}),
-			});
-			message = "Role diperbarui.";
-			editing = false;
-			await load();
-		} catch (cause) {
-			editError =
-				cause instanceof Error ? cause.message : "Role gagal diperbarui.";
-		} finally {
-			saving = false;
-		}
-	}
-
-	$effect(() => {
-		const controller = new AbortController();
-		void load(controller.signal);
-		return () => controller.abort();
-	});
+$effect(() => {
+	const controller = new AbortController();
+	void load(controller.signal);
+	return () => controller.abort();
+});
 </script>
 
 {#if error}

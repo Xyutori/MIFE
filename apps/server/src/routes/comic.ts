@@ -58,10 +58,34 @@ import {
 	visibleSeriesForRoute,
 } from "../catalog/series";
 import { auth, db, s3 } from "../services";
+import {
+	type ContentKind,
+	getLocalViewCount,
+	recordContentView,
+} from "../visits/record";
+import { getClientIp, isBot, visitorKey } from "../visits/visitor";
 
 const PAGE_SIZE_MAX = 12;
 const PAGE_SIZE_DEFAULT = 12;
 const IMAGE_SOURCES_FALLBACK = ["local"];
+
+/** Rate-limit in-memory per IP: 60 hit/menit, sweep tiap panggil. */
+const VIEW_RATE_LIMIT = 60;
+const VIEW_RATE_WINDOW_MS = 60_000;
+const viewRateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+function isViewRateLimited(ip: string, now = Date.now()): boolean {
+	for (const [key, bucket] of viewRateBuckets) {
+		if (bucket.resetAt <= now) viewRateBuckets.delete(key);
+	}
+	const bucket = viewRateBuckets.get(ip);
+	if (!bucket || bucket.resetAt <= now) {
+		viewRateBuckets.set(ip, { count: 1, resetAt: now + VIEW_RATE_WINDOW_MS });
+		return false;
+	}
+	bucket.count += 1;
+	return bucket.count > VIEW_RATE_LIMIT;
+}
 
 function clampNumber(value: string | undefined, fallback: number, max: number) {
 	const parsed = Number(value);
@@ -227,7 +251,7 @@ export const comicRoutes = new Elysia({ name: "comic-routes" })
 		"/api/v1/library/:id/chapters",
 		async ({ params, query, set }) => {
 			const page = clampNumber(query.page, 1, 1_000_000);
-			const pageSize = clampNumber(query.pageSize, 30, 100);
+			const pageSize = clampNumber(query.pageSize, 10, 100);
 			const search = query.q?.trim().slice(0, 80) ?? "";
 			const sort = query.sort === "oldest" ? "oldest" : "recent";
 			const exists = await cacheRemember(
@@ -439,7 +463,7 @@ export const comicRoutes = new Elysia({ name: "comic-routes" })
 		"/api/v1/super-komik/series/:id",
 		async ({ params, query, set }) => {
 			const page = clampNumber(query.page, 1, 1_000_000);
-			const pageSize = clampNumber(query.pageSize, 100, 100);
+			const pageSize = clampNumber(query.pageSize, 10, 100);
 			const result = await getSuperKomikSeriesPage(db, params.id, {
 				page,
 				pageSize,
@@ -541,4 +565,57 @@ export const comicRoutes = new Elysia({ name: "comic-routes" })
 			return redirectExternal(asset.fallbackUrl, set, "Media tidak tersedia.");
 		},
 		{ params: t.Object({ id: t.String() }) },
+	)
+	// ---- Local view counter (lane VISITOR-SERVER) ----
+	// Satu endpoint generik untuk komik/chapter/anime/episode. GET detail
+	// sengaja TIDAK menghitung (cache 120 dtk + crawler); frontend memanggil
+	// POST ini sekali per tayang. Bot-UA dan view duplikat harian tetap 200
+	// dengan `{counted:false}`; id tak dikenal/hidden -> 404 generik.
+	.post(
+		"/api/v1/views",
+		async ({ body, request, set }) => {
+			const ip = getClientIp(request.headers);
+			if (isViewRateLimited(ip)) {
+				set.status = 429;
+				return { error: "Terlalu banyak permintaan, coba lagi nanti." };
+			}
+			const kind = body.kind as ContentKind;
+			const id = body.id.trim();
+			if (!id || id.length > 256) {
+				set.status = 404;
+				return { error: "Konten tidak ditemukan" };
+			}
+			const userAgent = request.headers.get("user-agent") ?? "";
+			if (isBot(userAgent)) {
+				const current = await getLocalViewCount(db, kind, id);
+				if (current === null) {
+					set.status = 404;
+					return { error: "Konten tidak ditemukan" };
+				}
+				return { counted: false, localViewCount: current };
+			}
+			const userId = await resolveUserId(request);
+			const key = visitorKey({ userId, ip, ua: userAgent });
+			const result = await recordContentView(db, {
+				type: kind,
+				id,
+				visitorKey: key,
+			});
+			if (!result.found) {
+				set.status = 404;
+				return { error: "Konten tidak ditemukan" };
+			}
+			return { counted: result.counted, localViewCount: result.localViewCount };
+		},
+		{
+			body: t.Object({
+				kind: t.Union([
+					t.Literal("comic"),
+					t.Literal("chapter"),
+					t.Literal("anime"),
+					t.Literal("episode"),
+				]),
+				id: t.String({ minLength: 1, maxLength: 256 }),
+			}),
+		},
 	);

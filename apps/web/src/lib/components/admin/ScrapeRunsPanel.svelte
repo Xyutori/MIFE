@@ -142,9 +142,7 @@ async function toggleDetails(runId: string) {
 	expandedRunId = runId;
 	if (details[runId]) return;
 	try {
-		const payload = await requestJson<RunDetail>(
-			`/api/admin/scrapes/${runId}`,
-		);
+		const payload = await requestJson<RunDetail>(`/api/admin/scrapes/${runId}`);
 		details = {
 			...details,
 			[runId]: (payload.events ?? []).map((event) => ({

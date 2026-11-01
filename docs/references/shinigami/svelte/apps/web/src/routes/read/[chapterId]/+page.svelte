@@ -1,34 +1,34 @@
 <script lang="ts">
-	import AdSlot from "#lib/components/comic/AdSlot.svelte";
-	import CommentRules from "#lib/components/comic/CommentRules.svelte";
-	import CommentThread from "#lib/components/comic/CommentThread.svelte";
-	import ReactionBar from "#lib/components/comic/ReactionBar.svelte";
-	import ReaderNav from "#lib/components/comic/ReaderNav.svelte";
-	import ReaderView from "#lib/components/comic/ReaderView.svelte";
-	import { authClient } from "#lib/auth-client.ts";
-	import { mockReactions } from "../../_mock";
-	import { pushHistory } from "../../_library-store";
-	import type { PageProps } from "./$types";
+import { authClient } from "#lib/auth-client.ts";
+import AdSlot from "#lib/components/comic/AdSlot.svelte";
+import CommentRules from "#lib/components/comic/CommentRules.svelte";
+import CommentThread from "#lib/components/comic/CommentThread.svelte";
+import ReactionBar from "#lib/components/comic/ReactionBar.svelte";
+import ReaderNav from "#lib/components/comic/ReaderNav.svelte";
+import ReaderView from "#lib/components/comic/ReaderView.svelte";
+import { pushHistory } from "../../_library-store";
+import { mockReactions } from "../../_mock";
+import type { PageProps } from "./$types";
 
-	let { data }: PageProps = $props();
+let { data }: PageProps = $props();
 
-	const session = authClient.useSession();
+const session = authClient.useSession();
 
-	let reportSent = $state(false);
+let reportSent = $state(false);
 
-	const prevHref = $derived(data.prevId ? `/read/${data.prevId}` : null);
-	const nextHref = $derived(data.nextId ? `/read/${data.nextId}` : null);
+const prevHref = $derived(data.prevId ? `/read/${data.prevId}` : null);
+const nextHref = $derived(data.nextId ? `/read/${data.nextId}` : null);
 
-	$effect(() => {
-		pushHistory({
-			seriesId: data.series.id,
-			chapterId: data.chapter.id,
-			title: data.series.title,
-			chapter: data.chapter.number,
-			cover: data.series.cover,
-			at: Date.now(),
-		});
+$effect(() => {
+	pushHistory({
+		seriesId: data.series.id,
+		chapterId: data.chapter.id,
+		title: data.series.title,
+		chapter: data.chapter.number,
+		cover: data.series.cover,
+		at: Date.now(),
 	});
+});
 </script>
 
 <div class="mx-auto w-full max-w-4xl space-y-6 px-4 pb-28 pt-4 lg:pb-12">

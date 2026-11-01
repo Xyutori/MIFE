@@ -1,93 +1,92 @@
 <script lang="ts">
-	import { requestJson } from "#lib/admin.ts";
-	import AdminNotice from "#lib/components/admin/AdminNotice.svelte";
-	import AdminSourceFormCard from "#lib/components/admin/AdminSourceFormCard.svelte";
-	import ErrorState from "#lib/components/admin/ErrorState.svelte";
+import { requestJson } from "#lib/admin.ts";
+import AdminNotice from "#lib/components/admin/AdminNotice.svelte";
+import AdminSourceFormCard from "#lib/components/admin/AdminSourceFormCard.svelte";
+import ErrorState from "#lib/components/admin/ErrorState.svelte";
 
-	type Tab = "comic" | "anime";
+type Tab = "comic" | "anime";
 
-	type Source = {
-		id: string;
-		key: string;
-		name: string;
-		baseUrl: string;
-		prefix: string;
-		requestDelayMs: number;
-		enabled: boolean;
+type Source = {
+	id: string;
+	key: string;
+	name: string;
+	baseUrl: string;
+	prefix: string;
+	requestDelayMs: number;
+	enabled: boolean;
+};
+
+let tab = $state<Tab>("comic");
+let sources = $state<Source[]>([]);
+let loading = $state(true);
+let busy = $state("");
+let error = $state("");
+let notice = $state("");
+
+const tabs: Array<{ id: Tab; label: string }> = [
+	{ id: "comic", label: "Comic" },
+	{ id: "anime", label: "Anime" },
+];
+
+async function refresh(signal?: AbortSignal) {
+	const endpoint =
+		tab === "comic" ? "/api/v1/sources" : "/api/v1/anime/sources";
+	const rows = await requestJson<Source[]>(endpoint, { signal });
+	sources = rows;
+}
+
+function patchPath(source: Source): string {
+	return tab === "anime"
+		? `/api/admin/anime/sources/${encodeURIComponent(source.id)}`
+		: `/api/admin/sources/${encodeURIComponent(source.id)}`;
+}
+
+async function saveSource(source: Source) {
+	busy = source.id;
+	error = "";
+	try {
+		await requestJson(patchPath(source), {
+			method: "PATCH",
+			body: JSON.stringify({
+				baseUrl: source.baseUrl,
+				prefix: source.prefix,
+				enabled: source.enabled,
+				requestDelayMs: source.requestDelayMs,
+			}),
+		});
+		notice = `${source.name} tersimpan.`;
+	} catch (cause) {
+		error =
+			cause instanceof Error
+				? cause.message
+				: `Sumber ${source.name} gagal disimpan.`;
+	} finally {
+		busy = "";
+	}
+}
+
+$effect(() => {
+	tab;
+	loading = true;
+	const controller = new AbortController();
+	let active = true;
+	void refresh(controller.signal)
+		.then(() => {
+			if (active) error = "";
+		})
+		.catch((cause: unknown) => {
+			if (!active) return;
+			if ((cause as Error)?.name === "AbortError") return;
+			error = cause instanceof Error ? cause.message : "Sumber gagal dimuat.";
+		})
+		.finally(() => {
+			if (active) loading = false;
+		});
+	return () => {
+		active = false;
+		controller.abort();
 	};
-
-	let tab = $state<Tab>("comic");
-	let sources = $state<Source[]>([]);
-	let loading = $state(true);
-	let busy = $state("");
-	let error = $state("");
-	let notice = $state("");
-
-	const tabs: Array<{ id: Tab; label: string }> = [
-		{ id: "comic", label: "Comic" },
-		{ id: "anime", label: "Anime" },
-	];
-
-	async function refresh(signal?: AbortSignal) {
-		const endpoint =
-			tab === "comic" ? "/api/v1/sources" : "/api/v1/anime/sources";
-		const rows = await requestJson<Source[]>(endpoint, { signal });
-		sources = rows;
-	}
-
-	function patchPath(source: Source): string {
-		return tab === "anime"
-			? `/api/admin/anime/sources/${encodeURIComponent(source.id)}`
-			: `/api/admin/sources/${encodeURIComponent(source.id)}`;
-	}
-
-	async function saveSource(source: Source) {
-		busy = source.id;
-		error = "";
-		try {
-			await requestJson(patchPath(source), {
-				method: "PATCH",
-				body: JSON.stringify({
-					baseUrl: source.baseUrl,
-					prefix: source.prefix,
-					enabled: source.enabled,
-					requestDelayMs: source.requestDelayMs,
-				}),
-			});
-			notice = `${source.name} tersimpan.`;
-		} catch (cause) {
-			error =
-				cause instanceof Error
-					? cause.message
-					: `Sumber ${source.name} gagal disimpan.`;
-		} finally {
-			busy = "";
-		}
-	}
-
-	$effect(() => {
-		tab;
-		loading = true;
-		const controller = new AbortController();
-		let active = true;
-		void refresh(controller.signal)
-			.then(() => {
-				if (active) error = "";
-			})
-			.catch((cause: unknown) => {
-				if (!active) return;
-				if ((cause as Error)?.name === "AbortError") return;
-				error = cause instanceof Error ? cause.message : "Sumber gagal dimuat.";
-			})
-			.finally(() => {
-				if (active) loading = false;
-			});
-		return () => {
-			active = false;
-			controller.abort();
-		};
-	});
-
+});
 </script>
 
 <div role="tablist" aria-label="Jenis sumber" class="mb-5 flex flex-wrap gap-2">

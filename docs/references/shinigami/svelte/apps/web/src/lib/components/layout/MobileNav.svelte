@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Compass, House, Library, Search, X } from "lucide-svelte";
-import { page } from "$app/state";
 import { cn } from "#lib/utils.js";
+import { page } from "$app/state";
 
 let showNotice = $state(true);
 

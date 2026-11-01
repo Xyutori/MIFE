@@ -13,15 +13,15 @@ import { Elysia } from "elysia";
 import { trace } from "elysia/trace";
 
 export const app = new Elysia()
-  .use(trace())
-  .trace(({ id, onHandle }) => {
-    onHandle(({ onStop }) => {
-      onStop(({ elapsed, error }) => {
-        console.log({ id, elapsed, error });
-      });
-    });
-  })
-  .get("/", () => "Hello");
+	.use(trace())
+	.trace(({ id, onHandle }) => {
+		onHandle(({ onStop }) => {
+			onStop(({ elapsed, error }) => {
+				console.log({ id, elapsed, error });
+			});
+		});
+	})
+	.get("/", () => "Hello");
 ```
 
 Register listeners synchronously. The v2 trace implementation does not await promises returned by trace callbacks. For headers that must reach the current response, mutate `set.headers` synchronously inside an `onStop` callback before response mapping. An `async onStop` callback is not a lifecycle barrier.
@@ -44,11 +44,11 @@ Each listener receives `id`, `event`, `name`, `begin`, `end: Promise<number>`, `
 
 ```ts
 new Elysia().use(trace()).trace(({ onBeforeHandle }) => {
-  onBeforeHandle(({ onEvent }) => {
-    onEvent(({ name, onStop }) => {
-      onStop(({ elapsed }) => console.log(name, elapsed));
-    });
-  });
+	onBeforeHandle(({ onEvent }) => {
+		onEvent(({ name, onStop }) => {
+			onStop(({ elapsed }) => console.log(name, elapsed));
+		});
+	});
 });
 ```
 
@@ -65,13 +65,13 @@ import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-node";
 import { Elysia } from "elysia";
 
 export const app = new Elysia()
-  .use(
-    opentelemetry({
-      serviceName: "example-api",
-      spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
-    }),
-  )
-  .get("/message", () => record("format-message", () => ({ text: "Hello" })));
+	.use(
+		opentelemetry({
+			serviceName: "example-api",
+			spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
+		}),
+	)
+	.get("/message", () => record("format-message", () => ({ text: "Hello" })));
 ```
 
 The exporter uses its configured endpoint and credentials. The plugin creates lifecycle spans and propagates request context to compatible instrumented libraries. Name hook functions for recognizable spans.
@@ -97,7 +97,7 @@ import { opentelemetry } from "@elysia/opentelemetry";
 import { PgInstrumentation } from "@opentelemetry/instrumentation-pg";
 
 export const instrumentation = opentelemetry({
-  instrumentations: [new PgInstrumentation()],
+	instrumentations: [new PgInstrumentation()],
 });
 ```
 
@@ -121,12 +121,12 @@ import { serverTiming } from "@elysia/server-timing";
 import { Elysia } from "elysia";
 
 export const app = new Elysia()
-  .use(
-    serverTiming({
-      allow: ({ request }) => new URL(request.url).pathname !== "/health",
-    }),
-  )
-  .get("/", () => "Hello");
+	.use(
+		serverTiming({
+			allow: ({ request }) => new URL(request.url).pathname !== "/health",
+		}),
+	)
+	.get("/", () => "Hello");
 ```
 
 Inspect the response's `Server-Timing` header or the browser Network timing panel. `enabled` defaults to `NODE_ENV !== 'production'`. `allow` is a boolean or a synchronous predicate. The `trace` option selects `request`, `parse`, `transform`, `beforeHandle`, `handle`, `afterHandle`, `error`, `mapResponse`, and `total`.

@@ -10,32 +10,32 @@ import { expect, test } from "bun:test";
 import { Elysia, t } from "elysia";
 
 const app = new Elysia().post(
-  "/users",
-  {
-    body: t.Object({ name: t.String({ minLength: 1 }) }),
-  },
-  ({ body, status }) => status(201, body),
+	"/users",
+	{
+		body: t.Object({ name: t.String({ minLength: 1 }) }),
+	},
+	({ body, status }) => status(201, body),
 );
 
 test("creates a user", async () => {
-  const response = await app.handle("/users", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ name: "Ada" }),
-  });
+	const response = await app.handle("/users", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ name: "Ada" }),
+	});
 
-  expect(response.status).toBe(201);
-  expect(await response.json()).toEqual({ name: "Ada" });
+	expect(response.status).toBe(201);
+	expect(await response.json()).toEqual({ name: "Ada" });
 });
 
 test("rejects invalid input", async () => {
-  const response = await app.handle("/users", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ name: "" }),
-  });
+	const response = await app.handle("/users", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ name: "" }),
+	});
 
-  expect(response.status).toBe(422);
+	expect(response.status).toBe(422);
 });
 ```
 

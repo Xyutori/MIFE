@@ -72,6 +72,7 @@ export const animeSeries = pgTable(
 			.$type<Record<string, unknown>>()
 			.notNull()
 			.default(sql`'{}'::jsonb`),
+		localViewCount: integer("local_view_count").notNull().default(0),
 		isVisible: boolean("is_visible").notNull().default(true),
 		latestEpisodeNumber: text("latest_episode_number"),
 		latestEpisodeAt: timestamptz("latest_episode_at"),
@@ -161,6 +162,7 @@ export const animeEpisodes = pgTable(
 		sortNumber: real("sort_number"),
 		title: text("title"),
 		releasedAt: timestamptz("released_at"),
+		localViewCount: integer("local_view_count").notNull().default(0),
 		...timestamps(),
 	},
 	(table) => [

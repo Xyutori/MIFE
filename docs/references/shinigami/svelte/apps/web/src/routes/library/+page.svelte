@@ -1,44 +1,44 @@
 <script lang="ts">
-	import LoginGate from "#lib/components/comic/LoginGate.svelte";
-	import SeriesCard from "#lib/components/comic/SeriesCard.svelte";
-	import { authClient } from "#lib/auth-client.ts";
-	import { getSeriesById } from "../_mock";
-	import {
-		BOOKMARKS_KEY,
-		READLIST_KEY,
-		loadHistory,
-		loadIds,
-		type HistoryEntry,
-	} from "../_library-store";
+import { authClient } from "#lib/auth-client.ts";
+import LoginGate from "#lib/components/comic/LoginGate.svelte";
+import SeriesCard from "#lib/components/comic/SeriesCard.svelte";
+import {
+	BOOKMARKS_KEY,
+	type HistoryEntry,
+	loadHistory,
+	loadIds,
+	READLIST_KEY,
+} from "../_library-store";
+import { getSeriesById } from "../_mock";
 
-	type ShelfTab = "bookmark" | "readlist" | "history";
+type ShelfTab = "bookmark" | "readlist" | "history";
 
-	const session = authClient.useSession();
+const session = authClient.useSession();
 
-	let shelfTab = $state<ShelfTab>("bookmark");
-	let bookmarkIds = $state<string[]>([]);
-	let readlistIds = $state<string[]>([]);
-	let history = $state<HistoryEntry[]>([]);
+let shelfTab = $state<ShelfTab>("bookmark");
+let bookmarkIds = $state<string[]>([]);
+let readlistIds = $state<string[]>([]);
+let history = $state<HistoryEntry[]>([]);
 
-	const bookmarkedSeries = $derived(
-		bookmarkIds.map((id) => getSeriesById(id)).filter((s) => s !== undefined),
-	);
-	const readlistSeries = $derived(
-		readlistIds.map((id) => getSeriesById(id)).filter((s) => s !== undefined),
-	);
+const bookmarkedSeries = $derived(
+	bookmarkIds.map((id) => getSeriesById(id)).filter((s) => s !== undefined),
+);
+const readlistSeries = $derived(
+	readlistIds.map((id) => getSeriesById(id)).filter((s) => s !== undefined),
+);
 
-	$effect(() => {
-		// Muat rak hanya di client; localStorage tidak ada saat SSR.
-		bookmarkIds = loadIds(BOOKMARKS_KEY);
-		readlistIds = loadIds(READLIST_KEY);
-		history = loadHistory();
-	});
+$effect(() => {
+	// Muat rak hanya di client; localStorage tidak ada saat SSR.
+	bookmarkIds = loadIds(BOOKMARKS_KEY);
+	readlistIds = loadIds(READLIST_KEY);
+	history = loadHistory();
+});
 
-	function shelfClass(active: boolean): string {
-		return active
-			? "bg-[#E01B41] text-white"
-			: "bg-neutral-800 text-neutral-300 hover:bg-neutral-700";
-	}
+function shelfClass(active: boolean): string {
+	return active
+		? "bg-[#E01B41] text-white"
+		: "bg-neutral-800 text-neutral-300 hover:bg-neutral-700";
+}
 </script>
 
 <div class="mx-auto w-full max-w-[1440px] space-y-6 px-4 pb-28 pt-6 lg:pb-12">

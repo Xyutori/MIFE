@@ -1,9 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import {
-	formatDateTimeId,
-	requestJson,
-} from "#lib/admin.ts";
+import { formatDateTimeId, requestJson } from "#lib/admin.ts";
 import ScrapeControls from "#lib/components/admin/ScrapeControls.svelte";
 import ScrapeHistoryList from "#lib/components/admin/ScrapeHistoryList.svelte";
 import ScrapeWorkerList from "#lib/components/admin/ScrapeWorkerList.svelte";

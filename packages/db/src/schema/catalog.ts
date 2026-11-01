@@ -148,6 +148,7 @@ export const series = pgTable(
 		comicType: text("comic_type"),
 		countryId: text("country_id"),
 		viewCount: integer("view_count"),
+		localViewCount: integer("local_view_count").notNull().default(0),
 		rating: real("rating"),
 		bookmarkCount: integer("bookmark_count"),
 		popularityRank: integer("popularity_rank"),
@@ -302,6 +303,7 @@ export const chapters = pgTable(
 		title: text("title"),
 		publishedAt: timestamptz("published_at"),
 		viewCount: integer("view_count"),
+		localViewCount: integer("local_view_count").notNull().default(0),
 		...timestamps(),
 	},
 	(table) => [
@@ -554,6 +556,11 @@ export const sourceScrapeState = pgTable(
 		lastSuccessAt: timestamptz("last_success_at"),
 		lastAttemptAt: timestamptz("last_attempt_at"),
 		lastAutoScrapeDate: text("last_auto_scrape_date"),
+		// Slot "HH:MM" terakhir yang dijalankan scrape otomatis (multi-jadwal
+		// harian). Bersama lastAutoScrapeDate membentuk penanda monoton
+		// "YYYY-MM-DD HH:MM" zona waktu scrape agar tiap slot jalan tepat
+		// sekali per hari per sumber.
+		lastAutoScrapeSlot: text("last_auto_scrape_slot"),
 		cursorJson: jsonb("cursor_json")
 			.$type<Record<string, unknown>>()
 			.notNull()

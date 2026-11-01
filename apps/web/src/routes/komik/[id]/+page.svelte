@@ -1,3 +1,8 @@
+<script lang="ts" module>
+/** Guard sekali-per-id agar navigasi bolak-balik & HMR tidak dobel-fire. */
+const recordedComicViews = new Set<string>();
+</script>
+
 <script lang="ts">
 import {
 	ArrowDown,
@@ -20,10 +25,13 @@ import {
 	coverUrl,
 	getSeries,
 	getSeriesChapters,
+	recordView,
 	type SeriesDetail,
 } from "#lib/api.ts";
 import BookmarkButton from "#lib/components/BookmarkButton.svelte";
+import CommentSection from "#lib/components/comments/CommentSection.svelte";
 import Pagination from "#lib/components/Pagination.svelte";
+import { getReadChapterIds, refreshHistoryMeta } from "#lib/history.ts";
 import { readerUrl } from "#lib/reader.ts";
 import {
 	cleanNames,
@@ -41,7 +49,7 @@ let error = $state("");
 let chapterItems = $state<ChapterListItem[]>([]);
 let chapterTotal = $state(0);
 let chapterPage = $state(1);
-let chapterPageSize = $state(30);
+let chapterPageSize = $state(10);
 let chapterSort = $state<"recent" | "oldest">("recent");
 let chapterSearch = $state("");
 let debouncedSearch = $state("");
@@ -49,6 +57,7 @@ let chaptersReady = $state(false);
 let loadingChapters = $state(false);
 let chapterError = $state("");
 let newestChapterId = $state<string | null>(null);
+let readIds = $state<Set<string>>(new Set());
 let synopsisExpanded = $state(false);
 let synopsisLong = $state(false);
 let synopsisEl: HTMLParagraphElement | undefined = $state(undefined);
@@ -142,11 +151,23 @@ function goBack() {
 	else window.location.assign("/");
 }
 
-function formatCompact(value: number): string {
-	return new Intl.NumberFormat("en", {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(value);
+function readViewGuard(key: string, id: string): boolean {
+	if (recordedComicViews.has(id)) return true;
+	try {
+		if (sessionStorage.getItem(key) === "1") {
+			recordedComicViews.add(id);
+			return true;
+		}
+	} catch {
+		// sessionStorage tidak tersedia — lanjut tanpa guard persisten.
+	}
+	recordedComicViews.add(id);
+	try {
+		sessionStorage.setItem(key, "1");
+	} catch {
+		// Abaikan.
+	}
+	return false;
 }
 
 $effect(() => {
@@ -162,6 +183,7 @@ $effect(() => {
 	debouncedSearch = "";
 	chapterError = "";
 	newestChapterId = null;
+	readIds = new Set();
 	synopsisExpanded = false;
 	synopsisLong = false;
 	void getSeries(seriesId, controller.signal)
@@ -171,7 +193,7 @@ $effect(() => {
 			chapterItems = payload.chapters ?? [];
 			newestChapterId = payload.chapters?.[0]?.chapter.id ?? null;
 			chapterTotal = payload.chapterPagination?.total ?? 0;
-			chapterPageSize = payload.chapterPagination?.pageSize ?? 30;
+			chapterPageSize = payload.chapterPagination?.pageSize ?? 10;
 			chaptersReady = true;
 		})
 		.catch((cause: unknown) => {
@@ -183,6 +205,49 @@ $effect(() => {
 		active = false;
 		controller.abort();
 	};
+});
+
+// Perbarui meta history + tandai chapter yang sudah dibaca.
+$effect(() => {
+	const current = data;
+	if (!current) return;
+	refreshHistoryMeta("comic", current.id, {
+		slug: current.slug,
+		title: current.title,
+		href: `/komik/${current.slug}`,
+		coverUpdatedAt: current.updatedAt,
+		comicType: current.comicType,
+		countryId: current.countryId,
+	});
+	readIds = getReadChapterIds("comic", current.id);
+	const id = current.id;
+	const onRefresh = () => {
+		readIds = getReadChapterIds("comic", id);
+	};
+	window.addEventListener("storage", onRefresh);
+	window.addEventListener("focus", onRefresh);
+	return () => {
+		window.removeEventListener("storage", onRefresh);
+		window.removeEventListener("focus", onRefresh);
+	};
+});
+
+// Counter lokal: catat sekali per id, hanya setelah detail sukses dimuat.
+$effect(() => {
+	const current = data;
+	if (!current) return;
+	const id = current.id;
+	if (readViewGuard(`symi:view:comic:${id}`, id)) return;
+	void recordView("comic", id).then((result) => {
+		if (
+			result &&
+			typeof result.localViewCount === "number" &&
+			data &&
+			data.id === id
+		) {
+			data = { ...data, localViewCount: result.localViewCount };
+		}
+	});
 });
 
 let debounce: ReturnType<typeof setTimeout> | undefined;
@@ -262,6 +327,8 @@ const origin = $derived(
 const cover = $derived(
 	data?.coverImageUrl ? coverUrl(data.id, data.updatedAt) : null,
 );
+// Angka tunggal: counter lokal; fallback ke angka scraper bila backend lama.
+const displayViews = $derived(data?.localViewCount ?? data?.viewCount ?? null);
 </script>
 
 <svelte:head>
@@ -405,10 +472,10 @@ const cover = $derived(
 								{data.bookmarkCount.toLocaleString("id-ID")}
 							</span>
 						{/if}
-						{#if data.viewCount !== null}
+						{#if displayViews !== null}
 							<span>
 								<Eye class="size-5 text-muted-foreground" />
-								{formatCompact(data.viewCount)}
+								{displayViews.toLocaleString("id-ID")}
 							</span>
 						{/if}
 						{#if data.popularityRank !== null}
@@ -610,11 +677,11 @@ const cover = $derived(
 								{/if}
 							</span>
 							<span class="chapter-card-copy">
-								<span class="chapter-card-title">
+								<span class={readIds.has(chapter.id) ? "chapter-card-title text-primary" : "chapter-card-title"}>
 									{formatChapterLabel(chapter.numberText, chapter.title)}
 								</span>
 								{#if ageLabel}
-									<time datetime={chapter.createdAt} title={ageLabel} aria-label={ageLabel} class="chapter-card-age">{ageLabel}</time>
+									<time datetime={chapter.createdAt} title={ageLabel} aria-label={ageLabel} class={readIds.has(chapter.id) ? "chapter-card-age text-primary" : "chapter-card-age"}>{ageLabel}</time>
 								{/if}
 							</span>
 						</a>
@@ -638,6 +705,13 @@ const cover = $derived(
 				loading={loadingChapters}
 				label="daftar chapter"
 				onChange={(next) => (chapterPage = next)}
+			/>
+		</section>
+
+		<section class="detail-section mt-14" aria-label="Komentar">
+			<CommentSection
+				targetType="comic_series"
+				targetId={data?.id ?? seriesId}
 			/>
 		</section>
 	</main>

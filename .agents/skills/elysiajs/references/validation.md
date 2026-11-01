@@ -19,13 +19,13 @@ Contents: [slots](#schema-slots), [coercion](#coercion), [Standard Schema](#stan
 import { Elysia, t } from "elysia";
 
 export const app = new Elysia().get(
-  "/users/:id",
-  {
-    params: t.Object({ id: t.Number() }),
-    query: t.Object({ name: t.String() }),
-    response: t.Object({ id: t.Number(), name: t.String() }),
-  },
-  ({ params, query }) => ({ id: params.id, name: query.name }),
+	"/users/:id",
+	{
+		params: t.Object({ id: t.Number() }),
+		query: t.Object({ name: t.String() }),
+		response: t.Object({ id: t.Number(), name: t.String() }),
+	},
+	({ params, query }) => ({ id: params.id, name: query.name }),
 );
 ```
 
@@ -80,15 +80,17 @@ Return `status(code, body)` to preserve status-specific body types.
 import { Elysia, t } from "elysia";
 
 new Elysia().get(
-  "/result",
-  {
-    response: {
-      200: t.Object({ name: t.String() }),
-      400: t.Object({ error: t.String() }),
-    },
-  },
-  ({ query, status }) =>
-    query.fail === "true" ? status(400, { error: "Invalid request" }) : { name: "Ada" },
+	"/result",
+	{
+		response: {
+			200: t.Object({ name: t.String() }),
+			400: t.Object({ error: t.String() }),
+		},
+	},
+	({ query, status }) =>
+		query.fail === "true"
+			? status(400, { error: "Invalid request" })
+			: { name: "Ada" },
 );
 ```
 
@@ -101,11 +103,11 @@ import { Elysia } from "elysia";
 import { z } from "zod";
 
 new Elysia().get(
-  "/users/:id",
-  {
-    params: z.object({ id: z.coerce.number() }),
-  },
-  ({ params }) => params.id,
+	"/users/:id",
+	{
+		params: z.object({ id: z.coerce.number() }),
+	},
+	({ params }) => params.id,
 );
 ```
 
@@ -124,13 +126,13 @@ import { fileTypeFromBlob } from "file-type";
 setFileTypeDetector(fileTypeFromBlob);
 
 new Elysia().post(
-  "/upload",
-  {
-    body: t.Object({
-      file: t.File({ type: ["image/png", "image/jpeg"], maxSize: "5m" }),
-    }),
-  },
-  ({ body }) => ({ name: body.file.name }),
+	"/upload",
+	{
+		body: t.Object({
+			file: t.File({ type: ["image/png", "image/jpeg"], maxSize: "5m" }),
+		}),
+	},
+	({ body }) => ({ name: body.file.name }),
 );
 ```
 
@@ -144,14 +146,16 @@ import { z } from "zod";
 setFileTypeDetector(fileTypeFromBlob);
 
 new Elysia().post(
-  "/upload",
-  {
-    parse: "formdata",
-    body: z.object({
-      file: z.file().refine((file) => fileType(file, "image/jpeg"), "Expected JPEG"),
-    }),
-  },
-  ({ body }) => ({ name: body.file.name }),
+	"/upload",
+	{
+		parse: "formdata",
+		body: z.object({
+			file: z
+				.file()
+				.refine((file) => fileType(file, "image/jpeg"), "Expected JPEG"),
+		}),
+	},
+	({ body }) => ({ name: body.file.name }),
 );
 ```
 
@@ -175,8 +179,12 @@ const ByIdGet = { Params: t.Object({ id: t.String() }), Response: User };
 type ByIdGet = UnwrapModels<typeof ByIdGet>;
 
 new Elysia()
-  .model({ "user.profile": User })
-  .post("/profile", { body: "user.profile", response: "user.profile" }, ({ body }) => body);
+	.model({ "user.profile": User })
+	.post(
+		"/profile",
+		{ body: "user.profile", response: "user.profile" },
+		({ body }) => body,
+	);
 ```
 
 `ByIdGet.Params` is the schema; `ByIdGet['Params']` is its TypeScript type. See [project structure](project-structure.md) for a feature model convention.

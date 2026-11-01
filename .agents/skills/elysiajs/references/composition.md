@@ -15,13 +15,13 @@ Every Elysia instance can be a plugin. `.use(plugin)` imports its routes and sha
 
 ```ts
 const service = new Elysia({ name: "service" }).decorate(
-  "greet",
-  (name: string) => `Hello ${name}`,
+	"greet",
+	(name: string) => `Hello ${name}`,
 );
 
 const users = new Elysia({ prefix: "/users" })
-  .use(service)
-  .get("/:name", ({ greet, params }) => greet(params.name));
+	.use(service)
+	.get("/:name", ({ greet, params }) => greet(params.name));
 
 const app = new Elysia().use(users);
 ```
@@ -36,7 +36,7 @@ Plugin factories normally return new instances. Functional plugins receiving `(a
 
 ```ts
 const version = (value: number) =>
-  new Elysia({ name: "version", seed: value }).get("/version", value);
+	new Elysia({ name: "version", seed: value }).get("/version", value);
 ```
 
 Deduplication prevents repeated registration, not factory execution. Allocate shared resources outside repeated factory calls.
@@ -57,7 +57,7 @@ This table assumes hooks precede the routes and `.use()` calls they must affect.
 
 ```ts
 const identity = new Elysia({ name: "identity" }).derive("plugin", () => ({
-  serviceName: "catalog",
+	serviceName: "catalog",
 }));
 
 new Elysia().use(identity).get("/name", ({ serviceName }) => serviceName);
@@ -84,14 +84,14 @@ A guard applies route options to a set of routes:
 
 ```ts
 new Elysia()
-  .group(
-    "/v1",
-    {
-      query: t.Object({ page: t.Optional(t.Number()) }),
-    },
-    (app) => app.get("/items", ({ query }) => ({ page: query.page ?? 1 })),
-  )
-  .get("/health", () => "ok");
+	.group(
+		"/v1",
+		{
+			query: t.Object({ page: t.Optional(t.Number()) }),
+		},
+		(app) => app.get("/items", ({ query }) => ({ page: query.page ?? 1 })),
+	)
+	.get("/health", () => "ok");
 ```
 
 In v2, a route's schema replaces the corresponding inherited guard schema. Set `schema: 'merge'` on the guard when both schemas must apply. Enabled macro schemas compose separately with route schemas. See [validation.md](validation.md).
@@ -119,17 +119,17 @@ An object definition is a boolean option. A function definition receives the opt
 
 ```ts
 new Elysia()
-  .macro({
-    withRequestId: {
-      derive: () => ({ requestId: crypto.randomUUID() }),
-    },
-    log: (label: string) => ({
-      beforeHandle() {
-        console.log(label);
-      },
-    }),
-  })
-  .get("/", { withRequestId: true, log: "home" }, ({ requestId }) => requestId);
+	.macro({
+		withRequestId: {
+			derive: () => ({ requestId: crypto.randomUUID() }),
+		},
+		log: (label: string) => ({
+			beforeHandle() {
+				console.log(label);
+			},
+		}),
+	})
+	.get("/", { withRequestId: true, log: "home" }, ({ requestId }) => requestId);
 ```
 
 `withRequestId: false` disables the object macro. A macro can supply hooks, schemas, derived context, and other macro options.
@@ -144,17 +144,19 @@ import { Elysia, status } from "elysia";
 const sessions = new Map([["example-session", { id: "user-1" }]]);
 
 const auth = new Elysia({ name: "auth" }).macro({
-  auth: {
-    derive({ headers }) {
-      const token = headers.authorization?.match(/^Bearer (.+)$/)?.[1];
-      const user = token ? sessions.get(token) : undefined;
-      if (!user) return status(401, "Unauthorized");
-      return { user };
-    },
-  },
+	auth: {
+		derive({ headers }) {
+			const token = headers.authorization?.match(/^Bearer (.+)$/)?.[1];
+			const user = token ? sessions.get(token) : undefined;
+			if (!user) return status(401, "Unauthorized");
+			return { user };
+		},
+	},
 });
 
-new Elysia().use(auth).get("/me", { auth: true }, ({ user }) => ({ id: user.id }));
+new Elysia()
+	.use(auth)
+	.get("/me", { auth: true }, ({ user }) => ({ id: user.id }));
 ```
 
 The session map makes this example self-contained. Use the project's credential verification service in production.
@@ -165,36 +167,36 @@ Macro schemas combine with the route's schema and other enabled macro schemas. S
 
 ```ts
 new Elysia()
-  .macro({
-    withAge: {
-      body: t.Object({ age: t.Number() }),
-      beforeHandle({ body }) {
-        console.log(body.age);
-      },
-    },
-  })
-  .post(
-    "/people",
-    {
-      withAge: true,
-      body: t.Object({ name: t.String() }),
-    },
-    ({ body }) => ({ name: body.name, age: body.age }),
-  );
+	.macro({
+		withAge: {
+			body: t.Object({ age: t.Number() }),
+			beforeHandle({ body }) {
+				console.log(body.age);
+			},
+		},
+	})
+	.post(
+		"/people",
+		{
+			withAge: true,
+			body: t.Object({ name: t.String() }),
+		},
+		({ body }) => ({ name: body.name, age: body.age }),
+	);
 ```
 
 A macro can enable an earlier macro and add its own context:
 
 ```ts
 new Elysia()
-  .macro({ withUser: { derive: () => ({ user: "lilith" }) } })
-  .macro({
-    withMember: {
-      withUser: true,
-      derive: () => ({ role: "member" }),
-    },
-  })
-  .get("/", { withMember: true }, ({ user, role }) => ({ user, role }));
+	.macro({ withUser: { derive: () => ({ user: "lilith" }) } })
+	.macro({
+		withMember: {
+			withUser: true,
+			derive: () => ({ role: "member" }),
+		},
+	})
+	.get("/", { withMember: true }, ({ user, role }) => ({ user, role }));
 ```
 
 A macro's hooks do not infer another macro's derived properties. Keep dependent calculations in one derive or use the combined properties in the handler.
@@ -213,17 +215,17 @@ Function macros can return `$type: macroType<Lambda>()` to calculate context typ
 import { Elysia, macroType, type MacroTypeLambda } from "elysia";
 
 interface Role extends MacroTypeLambda {
-  output: Record<"role", this["input"]>;
+	output: Record<"role", this["input"]>;
 }
 
 new Elysia()
-  .macro({
-    role: (role: "admin" | "member") => ({
-      $type: macroType<Role>(),
-      derive: () => ({ role }),
-    }),
-  })
-  .get("/admin", { role: "admin" }, ({ role }) => role);
+	.macro({
+		role: (role: "admin" | "member") => ({
+			$type: macroType<Role>(),
+			derive: () => ({ role }),
+		}),
+	})
+	.get("/admin", { role: "admin" }, ({ role }) => role);
 ```
 
 The handler's `role` is the literal `'admin'`. Literal preservation requires literal constraints in the macro parameter, such as `'admin' | 'member'` or a template literal type.
@@ -233,29 +235,35 @@ The handler's `role` is the literal `'admin'`. Literal preservation requires lit
 A lambda's `option` can type a callback from the route's context:
 
 ```ts
-import { Elysia, macroType, t, type Context, type MacroTypeLambda } from "elysia";
+import {
+	Elysia,
+	macroType,
+	t,
+	type Context,
+	type MacroTypeLambda,
+} from "elysia";
 
 interface Log extends MacroTypeLambda {
-  option: (context: this["context"]) => string;
+	option: (context: this["context"]) => string;
 }
 
 new Elysia()
-  .macro({
-    log: (message: (context: Context) => string) => ({
-      $type: macroType<Log>(),
-      beforeHandle(context) {
-        console.log(message(context));
-      },
-    }),
-  })
-  .post(
-    "/users/:id",
-    {
-      body: t.Object({ name: t.String() }),
-      log: ({ params, body }) => `${params.id}: ${body.name}`,
-    },
-    ({ body }) => body,
-  );
+	.macro({
+		log: (message: (context: Context) => string) => ({
+			$type: macroType<Log>(),
+			beforeHandle(context) {
+				console.log(message(context));
+			},
+		}),
+	})
+	.post(
+		"/users/:id",
+		{
+			body: t.Object({ name: t.String() }),
+			log: ({ params, body }) => `${params.id}: ${body.name}`,
+		},
+		({ body }) => body,
+	);
 ```
 
 - `this['context']` includes the route schema, path parameters, earlier decorators and derives, and macros enabled by an earlier guard.

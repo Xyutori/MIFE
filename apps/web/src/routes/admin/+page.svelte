@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ComicLibraryPanel from "#lib/components/admin/ComicLibraryPanel.svelte";
+import ComicLibraryPanel from "#lib/components/admin/ComicLibraryPanel.svelte";
 </script>
 
 <svelte:head>

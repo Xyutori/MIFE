@@ -1,5 +1,5 @@
 <script lang="ts">
-	import AnimeCatalog from "#lib/components/anime/AnimeCatalog.svelte";
+import AnimeCatalog from "#lib/components/anime/AnimeCatalog.svelte";
 </script>
 
 <svelte:head>

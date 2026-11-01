@@ -10,6 +10,8 @@ type HeroDisplay = HeroItem & {
 	featureLabel?: string | null;
 	featureType?: string | null;
 	viewCount?: number | null;
+	/** Counter lokal (angka tunggal user). Absen bila backend lama. */
+	localViewCount?: number | null;
 	rating?: number | null;
 	chapterCount?: number | null;
 };
@@ -38,8 +40,9 @@ const slides = $derived<FeaturedHeroSlide[]>(
 		if (comic.featureType === "chapters" || label.includes("chapter terbanyak"))
 			tags.push({ text: "Teratas", tone: "chapters" });
 		const stats: string[] = [];
-		if (comic.viewCount != null)
-			stats.push(`${formatCompact(comic.viewCount)} views`);
+		// Angka tunggal: counter lokal; fallback ke angka scraper bila backend lama.
+		const heroViews = comic.localViewCount ?? comic.viewCount;
+		if (heroViews != null) stats.push(`${formatCompact(heroViews)} views`);
 		if (comic.chapterCount != null)
 			stats.push(`${comic.chapterCount.toLocaleString("id-ID")} chapter`);
 		return {

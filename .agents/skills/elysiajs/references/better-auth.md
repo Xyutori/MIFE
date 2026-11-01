@@ -10,8 +10,8 @@ import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 
 export const auth = betterAuth({
-  database: new Pool(),
-  basePath: "/api/auth",
+	database: new Pool(),
+	basePath: "/api/auth",
 });
 ```
 
@@ -22,26 +22,28 @@ import { Elysia } from "elysia";
 
 import { auth } from "./auth";
 
-const authentication = new Elysia({ name: "authentication" }).mount(auth.handler).macro({
-  auth: {
-    async derive({ status, request: { headers } }) {
-      const session = await auth.api.getSession({ headers });
-      if (!session) return status(401, "Unauthorized");
-      return { user: session.user, session: session.session };
-    },
-  },
-});
+const authentication = new Elysia({ name: "authentication" })
+	.mount(auth.handler)
+	.macro({
+		auth: {
+			async derive({ status, request: { headers } }) {
+				const session = await auth.api.getSession({ headers });
+				if (!session) return status(401, "Unauthorized");
+				return { user: session.user, session: session.session };
+			},
+		},
+	});
 
 export const app = new Elysia()
-  .use(
-    cors({
-      origin: "http://localhost:3001",
-      credentials: true,
-      allowedHeaders: ["Content-Type", "Authorization"],
-    }),
-  )
-  .use(authentication)
-  .get("/user", { auth: true }, ({ user }) => user);
+	.use(
+		cors({
+			origin: "http://localhost:3001",
+			credentials: true,
+			allowedHeaders: ["Content-Type", "Authorization"],
+		}),
+	)
+	.use(authentication)
+	.get("/user", { auth: true }, ({ user }) => user);
 ```
 
 Auth endpoints use `/api/auth`. Routes with `auth: true` receive `user` and `session`; unauthenticated requests return 401. See [composition](composition.md) for macros and mounts.
@@ -60,9 +62,9 @@ import { openAPI } from "better-auth/plugins";
 import { Pool } from "pg";
 
 export const auth = betterAuth({
-  database: new Pool(),
-  basePath: "/api/auth",
-  plugins: [openAPI()],
+	database: new Pool(),
+	basePath: "/api/auth",
+	plugins: [openAPI()],
 });
 ```
 
@@ -76,13 +78,16 @@ import { auth } from "./auth";
 
 const schema = await auth.api.generateOpenAPISchema();
 const paths = Object.fromEntries(
-  Object.entries(schema.paths).map(([path, operation]) => [`/api/auth${path}`, operation]),
+	Object.entries(schema.paths).map(([path, operation]) => [
+		`/api/auth${path}`,
+		operation,
+	]),
 );
 
 export const app = new Elysia().mount(auth.handler).use(
-  openapi({
-    documentation: { components: schema.components, paths },
-  }),
+	openapi({
+		documentation: { components: schema.components, paths },
+	}),
 );
 ```
 

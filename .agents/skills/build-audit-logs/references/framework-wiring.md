@@ -12,18 +12,22 @@ import { evlog, type EvlogVariables } from "evlog/hono";
 import { Hono } from "hono";
 
 const main = createAxiomDrain({ dataset: "logs" });
-const auditSink = auditOnly(signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }), {
-  await: true,
-});
+const auditSink = auditOnly(
+	signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }),
+	{
+		await: true,
+	},
+);
 
 const app = new Hono<EvlogVariables>();
 app.use(
-  evlog({
-    enrich: (ctx) => auditEnricher({ tenantId: (c) => c.headers?.["x-tenant-id"] })(ctx),
-    drain: async (ctx) => {
-      await Promise.all([main(ctx), auditSink(ctx)]);
-    },
-  }),
+	evlog({
+		enrich: (ctx) =>
+			auditEnricher({ tenantId: (c) => c.headers?.["x-tenant-id"] })(ctx),
+		drain: async (ctx) => {
+			await Promise.all([main(ctx), auditSink(ctx)]);
+		},
+	}),
 );
 ```
 
@@ -37,18 +41,21 @@ import { createFsDrain } from "evlog/fs";
 import express from "express";
 
 const main = createAxiomDrain({ dataset: "logs" });
-const auditSink = auditOnly(signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }), {
-  await: true,
-});
+const auditSink = auditOnly(
+	signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }),
+	{
+		await: true,
+	},
+);
 
 const app = express();
 app.use(
-  evlog({
-    enrich: auditEnricher({ tenantId: (ctx) => ctx.headers?.["x-tenant-id"] }),
-    drain: async (ctx) => {
-      await Promise.all([main(ctx), auditSink(ctx)]);
-    },
-  }),
+	evlog({
+		enrich: auditEnricher({ tenantId: (ctx) => ctx.headers?.["x-tenant-id"] }),
+		drain: async (ctx) => {
+			await Promise.all([main(ctx), auditSink(ctx)]);
+		},
+	}),
 );
 ```
 
@@ -62,16 +69,19 @@ import { createFsDrain } from "evlog/fs";
 import { createEvlog } from "evlog/next";
 
 const main = createAxiomDrain({ dataset: "logs" });
-const auditSink = auditOnly(signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }), {
-  await: true,
-});
+const auditSink = auditOnly(
+	signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }),
+	{
+		await: true,
+	},
+);
 
 export const { withEvlog, useLogger } = createEvlog({
-  service: "my-app",
-  enrich: auditEnricher({ tenantId: (ctx) => ctx.headers?.["x-tenant-id"] }),
-  drain: async (ctx) => {
-    await Promise.all([main(ctx), auditSink(ctx)]);
-  },
+	service: "my-app",
+	enrich: auditEnricher({ tenantId: (ctx) => ctx.headers?.["x-tenant-id"] }),
+	drain: async (ctx) => {
+		await Promise.all([main(ctx), auditSink(ctx)]);
+	},
 });
 ```
 
@@ -85,15 +95,15 @@ import { signed } from "evlog";
 import { createFsDrain } from "evlog/fs";
 
 initLogger({
-  env: { service: "billing-worker" },
-  drain: signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }),
+	env: { service: "billing-worker" },
+	drain: signed(createFsDrain({ dir: ".audit/" }), { strategy: "hash-chain" }),
 });
 
 audit({
-  action: "cron.cleanup",
-  actor: { type: "system", id: "cron" },
-  target: { type: "job", id: "cleanup-stale-sessions" },
-  outcome: "success",
+	action: "cron.cleanup",
+	actor: { type: "system", id: "cron" },
+	target: { type: "job", id: "cleanup-stale-sessions" },
+	outcome: "success",
 });
 ```
 

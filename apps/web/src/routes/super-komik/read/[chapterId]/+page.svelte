@@ -1,136 +1,140 @@
 <script lang="ts">
-	import {
-		ArrowDown,
-		ArrowLeft,
-		ArrowRight,
-		ArrowUp,
-		BookOpen,
-		House,
-	} from "lucide-svelte";
-	import { onMount } from "svelte";
-	import {
-		getSuperKomikChapter,
-		type SuperKomikReaderPayload,
-	} from "#lib/super-komik.ts";
-	import { decodeEntities } from "#lib/text.ts";
-	import type { PageProps } from "./$types";
+import {
+	ArrowDown,
+	ArrowLeft,
+	ArrowRight,
+	ArrowUp,
+	BookOpen,
+	House,
+} from "lucide-svelte";
+import { onMount } from "svelte";
+import CommentSection from "#lib/components/comments/CommentSection.svelte";
+import {
+	getSuperKomikChapter,
+	type SuperKomikReaderPayload,
+} from "#lib/super-komik.ts";
+import { decodeEntities } from "#lib/text.ts";
+import type { PageProps } from "./$types";
 
-	let { data: routeData }: PageProps = $props();
-	const chapterId = $derived(routeData.params.chapterId);
+let { data: routeData }: PageProps = $props();
+const chapterId = $derived(routeData.params.chapterId);
 
-	let payload = $state<SuperKomikReaderPayload | null>(null);
-	let error = $state("");
-	let failedImages = $state<Set<string>>(new Set());
-	let chromeHidden = $state(false);
+let payload = $state<SuperKomikReaderPayload | null>(null);
+let error = $state("");
+let failedImages = $state<Set<string>>(new Set());
+let chromeHidden = $state(false);
 
-	let controlTap: { x: number; y: number } | null = null;
-	let hideTimer: number | undefined = undefined;
-	let screenEl: HTMLDivElement | null = $state(null);
+let controlTap: { x: number; y: number } | null = null;
+let hideTimer: number | undefined;
+let screenEl: HTMLDivElement | null = $state(null);
 
-	/**
-	 * Layout kini `h-dvh` single-scroll: yang bergulir adalah `<main>`
-	 * induk milik +layout, BUKAN `window`. `.reader-screen` dirender
-	 * langsung di dalam `<main>` itu, jadi induk `<main>` pertama dari
-	 * root adalah scroll container.
-	 */
-	function scrollContainer(): HTMLElement | null {
-		let node: HTMLElement | null = screenEl?.parentElement ?? null;
-		while (node) {
-			if (node.tagName === "MAIN") return node;
-			node = node.parentElement;
-		}
-		return null;
+/**
+ * Layout kini `h-dvh` single-scroll: yang bergulir adalah `<main>`
+ * induk milik +layout, BUKAN `window`. `.reader-screen` dirender
+ * langsung di dalam `<main>` itu, jadi induk `<main>` pertama dari
+ * root adalah scroll container.
+ */
+function scrollContainer(): HTMLElement | null {
+	let node: HTMLElement | null = screenEl?.parentElement ?? null;
+	while (node) {
+		if (node.tagName === "MAIN") return node;
+		node = node.parentElement;
 	}
+	return null;
+}
 
-	function clearHideTimer() {
-		if (hideTimer !== undefined) window.clearTimeout(hideTimer);
-		hideTimer = undefined;
-	}
+function clearHideTimer() {
+	if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+	hideTimer = undefined;
+}
 
-	function scheduleHide() {
-		clearHideTimer();
-		hideTimer = window.setTimeout(() => {
-			chromeHidden = true;
-		}, 3600);
-	}
+function scheduleHide() {
+	clearHideTimer();
+	hideTimer = window.setTimeout(() => {
+		chromeHidden = true;
+	}, 3600);
+}
 
-	onMount(() => {
-		document.body.dataset.area = "reader";
-		const onPointerDown = (event: PointerEvent) => {
-			const target = event.target instanceof Element ? event.target : null;
-			if (target?.closest("[data-reader-controls]")) {
-				controlTap = null;
-				if (!chromeHidden) scheduleHide();
-				return;
-			}
-			controlTap =
-				target?.closest(".reader-screen") &&
-				!target.closest("[data-reader-controls]")
-					? { x: event.clientX, y: event.clientY }
-					: null;
-		};
-		const onPointerUp = (event: PointerEvent) => {
-			const start = controlTap;
+onMount(() => {
+	document.body.dataset.area = "reader";
+	const onPointerDown = (event: PointerEvent) => {
+		const target = event.target instanceof Element ? event.target : null;
+		if (target?.closest("[data-reader-controls]")) {
 			controlTap = null;
-			const target = event.target instanceof Element ? event.target : null;
-			if (
-				!start ||
-				!target?.closest(".reader-screen") ||
-				target.closest("[data-reader-controls]") ||
-				Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
-			) {
-				return;
-			}
-			if (!chromeHidden) clearHideTimer();
-			else scheduleHide();
-			chromeHidden = !chromeHidden;
-		};
-		document.addEventListener("pointerdown", onPointerDown);
-		document.addEventListener("pointerup", onPointerUp);
-		scheduleHide();
-		return () => {
-			delete document.body.dataset.area;
-			document.removeEventListener("pointerdown", onPointerDown);
-			document.removeEventListener("pointerup", onPointerUp);
-			clearHideTimer();
-		};
-	});
+			if (!chromeHidden) scheduleHide();
+			return;
+		}
+		controlTap =
+			target?.closest(".reader-screen") &&
+			!target.closest("[data-reader-controls]")
+				? { x: event.clientX, y: event.clientY }
+				: null;
+	};
+	const onPointerUp = (event: PointerEvent) => {
+		const start = controlTap;
+		controlTap = null;
+		const target = event.target instanceof Element ? event.target : null;
+		if (
+			!start ||
+			!target?.closest(".reader-screen") ||
+			target.closest("[data-reader-controls]") ||
+			Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
+		) {
+			return;
+		}
+		if (!chromeHidden) clearHideTimer();
+		else scheduleHide();
+		chromeHidden = !chromeHidden;
+	};
+	document.addEventListener("pointerdown", onPointerDown);
+	document.addEventListener("pointerup", onPointerUp);
+	scheduleHide();
+	return () => {
+		delete document.body.dataset.area;
+		document.removeEventListener("pointerdown", onPointerDown);
+		document.removeEventListener("pointerup", onPointerUp);
+		clearHideTimer();
+	};
+});
 
-	$effect(() => {
-		const id = chapterId;
-		let active = true;
-		const controller = new AbortController();
-		payload = null;
-		error = "";
-		failedImages = new Set();
-		chromeHidden = false;
-		scheduleHide();
-		void getSuperKomikChapter(id, controller.signal)
-			.then((data) => {
-				if (active) payload = data;
-			})
-			.catch((cause: unknown) => {
-				if (!active) return;
-				if (cause instanceof DOMException && cause.name === "AbortError") return;
-				error = cause instanceof Error ? cause.message : "Chapter gagal dimuat.";
-			});
-		return () => {
-			active = false;
-			controller.abort();
-		};
-	});
+$effect(() => {
+	const id = chapterId;
+	let active = true;
+	const controller = new AbortController();
+	payload = null;
+	error = "";
+	failedImages = new Set();
+	chromeHidden = false;
+	scheduleHide();
+	void getSuperKomikChapter(id, controller.signal)
+		.then((data) => {
+			if (active) payload = data;
+		})
+		.catch((cause: unknown) => {
+			if (!active) return;
+			if (cause instanceof DOMException && cause.name === "AbortError") return;
+			error = cause instanceof Error ? cause.message : "Chapter gagal dimuat.";
+		});
+	return () => {
+		active = false;
+		controller.abort();
+	};
+});
 
-	function retryImage(id: string) {
-		failedImages = new Set([...failedImages].filter((key) => key !== id));
-	}
+function retryImage(id: string) {
+	failedImages = new Set([...failedImages].filter((key) => key !== id));
+}
 
-	function scrollPage(direction: -1 | 1) {
-		const scroller = scrollContainer();
-		const viewport = scroller?.clientHeight ?? window.innerHeight;
-		const delta = { top: direction * viewport * 0.78, behavior: "smooth" as const };
-		if (scroller) scroller.scrollBy(delta);
-		else window.scrollBy(delta);
-	}
+function scrollPage(direction: -1 | 1) {
+	const scroller = scrollContainer();
+	const viewport = scroller?.clientHeight ?? window.innerHeight;
+	const delta = {
+		top: direction * viewport * 0.78,
+		behavior: "smooth" as const,
+	};
+	if (scroller) scroller.scrollBy(delta);
+	else window.scrollBy(delta);
+}
 </script>
 
 <svelte:head>
@@ -292,5 +296,9 @@
 				<ArrowDown />
 			</button>
 		</nav>
+	</div>
+
+	<div class="mx-auto max-w-5xl px-4 pb-16">
+		<CommentSection targetType="comic_chapter" targetId={chapterId} />
 	</div>
 {/if}

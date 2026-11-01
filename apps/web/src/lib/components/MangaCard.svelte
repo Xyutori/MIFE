@@ -28,9 +28,10 @@ const latest = $derived(
 			: [],
 );
 const recentUpdate = $derived.by(() => {
-	const createdAt = latest[0]?.createdAt;
-	if (!createdAt) return false;
-	const timestamp = Date.parse(createdAt);
+	// Waktu chapter (publishedAt) — bukan waktu scrape (createdAt).
+	const chapterTime = latest[0]?.publishedAt ?? latest[0]?.createdAt;
+	if (!chapterTime) return false;
+	const timestamp = Date.parse(chapterTime);
 	if (!Number.isFinite(timestamp)) return false;
 	return Math.max(0, Date.now() - timestamp) <= 24 * 60 * 60 * 1000;
 });
@@ -87,12 +88,13 @@ const typeInfo = $derived(comicTypeInfo(series.comicType, series.countryId));
 		{#if latest.length > 0}
 			<ul class="mt-2 grid gap-1 sm:mt-3 sm:gap-1.5" aria-label="Dua chapter terbaru">
 				{#each latest as chapter (chapter.id)}
-					{@const age = formatTimeAgo(chapter.createdAt)}
+					{@const chapterTime = chapter.publishedAt ?? chapter.createdAt}
+					{@const age = formatTimeAgo(chapterTime)}
 					<li class="flex min-h-10 min-w-0 items-center justify-between gap-2 rounded-xl bg-secondary px-3 text-foreground text-xs leading-4 sm:text-sm">
 						<span class="truncate">{formatChapterLabel(chapter.numberText)}</span>
 						{#if age}
 							<time
-								datetime={chapter.createdAt ?? undefined}
+								datetime={chapterTime ?? undefined}
 								title={age}
 								aria-label={age}
 								class="shrink-0 rounded-md bg-card px-2 py-1 font-semibold text-[11px] text-secondary-foreground sm:text-xs"

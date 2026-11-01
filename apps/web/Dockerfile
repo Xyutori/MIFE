@@ -5,15 +5,10 @@ WORKDIR /app
 COPY . .
 RUN --mount=type=cache,target=/root/.bun/install/cache bun install
 
-# PUBLIC_SERVER_URL dibake saat build (SvelteKit static). Diambil dari build-arg,
-# fallback ke apps/web/.env bila arg kosong.
-ARG PUBLIC_SERVER_URL=""
-ENV PUBLIC_SERVER_URL=${PUBLIC_SERVER_URL}
+# Nilai prod (PUBLIC_SERVER_URL domain) berasal dari secret .env.production
+# yang di-mount sebagai .env.local saat codegen; build membacanya dari sana.
 RUN --mount=type=secret,id=web_env,target=/app/apps/web/.env.local --mount=type=cache,target=/root/.bun/install/cache \
 	cd apps/web && bun run env:generate
-RUN if [ -n "$PUBLIC_SERVER_URL" ]; then \
-		printf 'PUBLIC_SERVER_URL=%s\nNODE_ENV=production\nPORT=4001\n' "$PUBLIC_SERVER_URL" > /app/apps/web/.env.local; \
-	fi
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	cd apps/web && bun run build
 

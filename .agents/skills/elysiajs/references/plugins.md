@@ -30,14 +30,14 @@ import { cors } from "@elysia/cors";
 import { Elysia } from "elysia";
 
 export const app = new Elysia()
-  .use(
-    cors({
-      origin: "https://app.example.com",
-      credentials: true,
-      allowedHeaders: ["Content-Type", "Authorization"],
-    }),
-  )
-  .get("/", () => "Hello");
+	.use(
+		cors({
+			origin: "https://app.example.com",
+			credentials: true,
+			allowedHeaders: ["Content-Type", "Authorization"],
+		}),
+	)
+	.get("/", () => "Hello");
 ```
 
 `cors()` accepts any origin by default. For credentialed browser requests, set the frontend origin and client `credentials: 'include'`.
@@ -67,13 +67,13 @@ const secret = process.env.JWT_SECRET;
 if (!secret) throw new Error("JWT_SECRET is required");
 
 export const app = new Elysia()
-  .use(bearer())
-  .use(jwt({ name: "jwt", secret, exp: "7d" }))
-  .get("/profile", async ({ bearer, jwt, status }) => {
-    const profile = await jwt.verify(bearer);
-    if (!profile) return status(401, "Unauthorized");
-    return profile;
-  });
+	.use(bearer())
+	.use(jwt({ name: "jwt", secret, exp: "7d" }))
+	.get("/profile", async ({ bearer, jwt, status }) => {
+		const profile = await jwt.verify(bearer);
+		if (!profile) return status(401, "Unauthorized");
+		return profile;
+	});
 ```
 
 Call `await jwt.sign(payload)` only after the application's credential check. `name` chooses the helper's context property; use distinct names for different configurations. `schema` validates and types custom payload fields. Common configuration includes `alg`, `iss`, `aud`, `sub`, `exp`, `nbf`, and `iat`; additional protected-header options follow jose.
@@ -115,24 +115,26 @@ new Elysia().get("/logo", file("public/logo.png"));
 import { html, Html } from "@elysia/html";
 import { Elysia, t } from "elysia";
 
-new Elysia().use(html()).post("/greet", { body: t.Object({ name: t.String() }) }, ({ body }) => (
-  <html>
-    <body>
-      <h1 safe>{body.name}</h1>
-    </body>
-  </html>
-));
+new Elysia()
+	.use(html())
+	.post("/greet", { body: t.Object({ name: t.String() }) }, ({ body }) => (
+		<html>
+			<body>
+				<h1 safe>{body.name}</h1>
+			</body>
+		</html>
+	));
 ```
 
 Use `.tsx` and configure the factory:
 
 ```json
 {
-  "compilerOptions": {
-    "jsx": "react",
-    "jsxFactory": "Html.createElement",
-    "jsxFragmentFactory": "Html.Fragment"
-  }
+	"compilerOptions": {
+		"jsx": "react",
+		"jsxFactory": "Html.createElement",
+		"jsxFragmentFactory": "Html.Fragment"
+	}
 }
 ```
 
@@ -154,13 +156,13 @@ import { cron, Patterns } from "@elysia/cron";
 import { Elysia } from "elysia";
 
 new Elysia().use(
-  cron({
-    name: "heartbeat",
-    pattern: Patterns.everyMinutes(5),
-    run() {
-      console.log("heartbeat");
-    },
-  }),
+	cron({
+		name: "heartbeat",
+		pattern: Patterns.everyMinutes(5),
+		run() {
+			console.log("heartbeat");
+		},
+	}),
 );
 ```
 
@@ -177,17 +179,17 @@ import { apollo, gql } from "@elysia/apollo";
 import { Elysia } from "elysia";
 
 new Elysia().use(
-  apollo({
-    typeDefs: gql`
+	apollo({
+		typeDefs: gql`
       type Query {
         hello: String
       }
     `,
-    resolvers: { Query: { hello: () => "Hello" } },
-    context: async ({ request }) => ({
-      authorization: request.headers.get("Authorization"),
-    }),
-  }),
+		resolvers: { Query: { hello: () => "Hello" } },
+		context: async ({ request }) => ({
+			authorization: request.headers.get("Authorization"),
+		}),
+	}),
 );
 ```
 
@@ -200,12 +202,12 @@ import { yoga } from "@elysia/graphql-yoga";
 import { Elysia } from "elysia";
 
 new Elysia().use(
-  yoga({
-    typeDefs: `type Query { hello: String }`,
-    context: { name: "Alex" },
-    useContext(_) {},
-    resolvers: { Query: { hello: (_parent, _args, context) => context.name } },
-  }),
+	yoga({
+		typeDefs: `type Query { hello: String }`,
+		context: { name: "Alex" },
+		useContext(_) {},
+		resolvers: { Query: { hello: (_parent, _args, context) => context.name } },
+	}),
 );
 ```
 

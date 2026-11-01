@@ -8,22 +8,25 @@
 import { Elysia, t } from "elysia";
 
 new Elysia().get(
-  "/profile",
-  {
-    cookie: t.Object({
-      profile: t.Cookie(t.Optional(t.Object({ id: t.Number(), name: t.String() })), {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-      }),
-      theme: t.Cookie(t.Optional(t.String()), { sameSite: "lax", path: "/" }),
-    }),
-  },
-  ({ cookie: { profile, theme } }) => {
-    profile.value = { id: 1, name: "Ada" };
-    theme.value = "dark";
-    return { profile: profile.value, theme: theme.value };
-  },
+	"/profile",
+	{
+		cookie: t.Object({
+			profile: t.Cookie(
+				t.Optional(t.Object({ id: t.Number(), name: t.String() })),
+				{
+					httpOnly: true,
+					sameSite: "lax",
+					path: "/",
+				},
+			),
+			theme: t.Cookie(t.Optional(t.String()), { sameSite: "lax", path: "/" }),
+		}),
+	},
+	({ cookie: { profile, theme } }) => {
+		profile.value = { id: 1, name: "Ada" };
+		theme.value = "dark";
+		return { profile: profile.value, theme: theme.value };
+	},
 );
 ```
 
@@ -55,22 +58,22 @@ const secret = process.env.COOKIE_SECRET;
 if (!secret) throw new Error("COOKIE_SECRET is required");
 
 new Elysia({
-  cookie: { secrets: secret },
+	cookie: { secrets: secret },
 }).get(
-  "/session",
-  {
-    cookie: t.Object({
-      session: t.Cookie(t.Optional(t.String()), {
-        sign: true,
-        httpOnly: true,
-        path: "/",
-      }),
-    }),
-  },
-  ({ cookie: { session } }) => {
-    session.value = crypto.randomUUID();
-    return "Session created";
-  },
+	"/session",
+	{
+		cookie: t.Object({
+			session: t.Cookie(t.Optional(t.String()), {
+				sign: true,
+				httpOnly: true,
+				path: "/",
+			}),
+		}),
+	},
+	({ cookie: { session } }) => {
+		session.value = crypto.randomUUID();
+		return "Session created";
+	},
 );
 ```
 

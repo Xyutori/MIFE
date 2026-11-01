@@ -1,250 +1,246 @@
 <script lang="ts">
-	import { LoaderCircle, Search, SlidersHorizontal, X } from "lucide-svelte";
-	import { requestJson } from "#lib/admin.ts";
-	import MangaCard from "#lib/components/MangaCard.svelte";
-	import Pagination from "#lib/components/Pagination.svelte";
-	import ErrorState from "#lib/components/admin/ErrorState.svelte";
-	import GenreMultiSelect from "#lib/components/ui/combobox/GenreMultiSelect.svelte";
-	import Select from "#lib/components/ui/select/Select.svelte";
-	import type { Series } from "#lib/api.ts";
+import { LoaderCircle, Search, SlidersHorizontal, X } from "lucide-svelte";
+import { requestJson } from "#lib/admin.ts";
+import type { Series } from "#lib/api.ts";
+import ErrorState from "#lib/components/admin/ErrorState.svelte";
+import MangaCard from "#lib/components/MangaCard.svelte";
+import Pagination from "#lib/components/Pagination.svelte";
+import GenreMultiSelect from "#lib/components/ui/combobox/GenreMultiSelect.svelte";
+import Select from "#lib/components/ui/select/Select.svelte";
 
-	type AdminSeries = {
+type AdminSeries = {
+	id: string;
+	slug: string;
+	title: string;
+	coverImageUrl: string | null;
+	latestChapterNumber: string | null;
+	latestChapterAt: string | null;
+	latestChapters?: Array<{
 		id: string;
-		slug: string;
-		title: string;
-		coverImageUrl: string | null;
-		latestChapterNumber: string | null;
-		latestChapterAt: string | null;
-		latestChapters?: Array<{
-			id: string;
-			numberText: string;
-			createdAt: string | null;
-		}>;
-		comicType: string | null;
-		countryId: string | null;
-		updatedAt: string;
-		isVisible: boolean;
-		sources: Array<{ key: string; name: string }>;
+		numberText: string;
+		createdAt: string | null;
+	}>;
+	comicType: string | null;
+	countryId: string | null;
+	updatedAt: string;
+	isVisible: boolean;
+	sources: Array<{ key: string; name: string }>;
+};
+
+type SourceOption = { id: string; key: string; name: string };
+
+const PAGE_SIZE = 48;
+
+// Pola tampilan disamakan dengan katalog publik (routes/+page.svelte):
+// search h-12 + tombol filter (dialog) + chip filter aktif + grid MangaCard.
+// Bedanya: opsi urut hanya recent/title (itu yang didukung server
+// /api/v1/library — "popular" tidak ada), plus filter khas admin
+// (sumber, visibilitas) sebagai baris tambahan di dialog yang sama.
+const SORT_OPTIONS = [
+	{ value: "recent", label: "Update terbaru" },
+	{ value: "title", label: "Judul A–Z" },
+] as const;
+
+const COMIC_TYPE_OPTIONS = [
+	{ value: "", label: "Semua tipe komik" },
+	{ value: "manga", label: "🇯🇵 Manga" },
+	{ value: "manhua", label: "🇨🇳 Manhua" },
+	{ value: "manhwa", label: "🇰🇷 Manhwa" },
+] as const;
+
+const STATUS_OPTIONS = [
+	{ value: "", label: "Semua status" },
+	{ value: "ongoing", label: "Ongoing" },
+	{ value: "completed", label: "Completed" },
+	{ value: "hiatus", label: "Hiatus" },
+] as const;
+
+const VISIBILITY_OPTIONS = [
+	{ value: "all", label: "Semua" },
+	{ value: "visible", label: "Tampil" },
+	{ value: "hidden", label: "Tersembunyi" },
+] as const;
+
+let items = $state<AdminSeries[]>([]);
+let total = $state(0);
+let page = $state(1);
+let pageSize = $state(PAGE_SIZE);
+let sourceOptions = $state<SourceOption[]>([]);
+let searchInput = $state("");
+let search = $state("");
+let sort = $state("recent");
+let comicType = $state("");
+let genreInput = $state("");
+let genre = $state("");
+let status = $state("");
+let sourceFilter = $state("all");
+let visibilityFilter = $state("all");
+let filterOpen = $state(false);
+let filterDialog = $state<HTMLDialogElement | null>(null);
+let loading = $state(true);
+let serverError = $state("");
+
+const visibleItems = $derived(
+	visibilityFilter === "all"
+		? items
+		: items.filter((item) =>
+				visibilityFilter === "visible" ? item.isVisible : !item.isVisible,
+			),
+);
+
+const activeFilterCount = $derived(
+	(comicType ? 1 : 0) +
+		(genre ? 1 : 0) +
+		(status ? 1 : 0) +
+		(sourceFilter !== "all" ? 1 : 0) +
+		(visibilityFilter !== "all" ? 1 : 0),
+);
+const hasActiveFilter = $derived(Boolean(search) || activeFilterCount > 0);
+const pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
+const initialLoading = $derived(loading && items.length === 0);
+const pageLoading = $derived(loading && items.length > 0);
+
+function resetPage() {
+	if (page !== 1) page = 1;
+}
+
+function toSeries(item: AdminSeries): Series {
+	return {
+		id: item.id,
+		slug: item.slug,
+		title: item.title,
+		coverImageUrl: item.coverImageUrl,
+		updatedAt: item.updatedAt,
+		latestChapterNumber: item.latestChapterNumber,
+		latestChapters: item.latestChapters?.length
+			? item.latestChapters.slice(0, 2)
+			: item.latestChapterNumber
+				? [
+						{
+							id: `${item.id}:latest`,
+							numberText: item.latestChapterNumber,
+							createdAt: item.latestChapterAt,
+						},
+					]
+				: [],
+		comicType: item.comicType,
+		countryId: item.countryId,
 	};
+}
 
-	type SourceOption = { id: string; key: string; name: string };
+let debounce: ReturnType<typeof setTimeout> | undefined;
+$effect(() => {
+	searchInput;
+	clearTimeout(debounce);
+	debounce = setTimeout(() => {
+		search = searchInput.trim();
+	}, 280);
+});
 
-	const PAGE_SIZE = 48;
+let genreDebounce: ReturnType<typeof setTimeout> | undefined;
+$effect(() => {
+	genreInput;
+	clearTimeout(genreDebounce);
+	genreDebounce = setTimeout(() => {
+		genre = genreInput.trim();
+	}, 280);
+});
 
-	// Pola tampilan disamakan dengan katalog publik (routes/+page.svelte):
-	// search h-12 + tombol filter (dialog) + chip filter aktif + grid MangaCard.
-	// Bedanya: opsi urut hanya recent/title (itu yang didukung server
-	// /api/v1/library — "popular" tidak ada), plus filter khas admin
-	// (sumber, visibilitas) sebagai baris tambahan di dialog yang sama.
-	const SORT_OPTIONS = [
-		{ value: "recent", label: "Update terbaru" },
-		{ value: "title", label: "Judul A–Z" },
-	] as const;
+async function loadSources(signal?: AbortSignal) {
+	sourceOptions = await requestJson<SourceOption[]>("/api/v1/sources", {
+		signal,
+	}).catch(() => [] as SourceOption[]);
+}
 
-	const COMIC_TYPE_OPTIONS = [
-		{ value: "", label: "Semua tipe komik" },
-		{ value: "manga", label: "🇯🇵 Manga" },
-		{ value: "manhua", label: "🇨🇳 Manhua" },
-		{ value: "manhwa", label: "🇰🇷 Manhwa" },
-	] as const;
-
-	const STATUS_OPTIONS = [
-		{ value: "", label: "Semua status" },
-		{ value: "ongoing", label: "Ongoing" },
-		{ value: "completed", label: "Completed" },
-		{ value: "hiatus", label: "Hiatus" },
-	] as const;
-
-	const VISIBILITY_OPTIONS = [
-		{ value: "all", label: "Semua" },
-		{ value: "visible", label: "Tampil" },
-		{ value: "hidden", label: "Tersembunyi" },
-	] as const;
-
-	let items = $state<AdminSeries[]>([]);
-	let total = $state(0);
-	let page = $state(1);
-	let pageSize = $state(PAGE_SIZE);
-	let sourceOptions = $state<SourceOption[]>([]);
-	let searchInput = $state("");
-	let search = $state("");
-	let sort = $state("recent");
-	let comicType = $state("");
-	let genreInput = $state("");
-	let genre = $state("");
-	let status = $state("");
-	let sourceFilter = $state("all");
-	let visibilityFilter = $state("all");
-	let filterOpen = $state(false);
-	let filterDialog = $state<HTMLDialogElement | null>(null);
-	let loading = $state(true);
-	let serverError = $state("");
-
-	const visibleItems = $derived(
-		visibilityFilter === "all"
-			? items
-			: items.filter((item) =>
-					visibilityFilter === "visible" ? item.isVisible : !item.isVisible,
-				),
-	);
-
-	const activeFilterCount = $derived(
-		(comicType ? 1 : 0) +
-			(genre ? 1 : 0) +
-			(status ? 1 : 0) +
-			(sourceFilter !== "all" ? 1 : 0) +
-			(visibilityFilter !== "all" ? 1 : 0),
-	);
-	const hasActiveFilter = $derived(Boolean(search) || activeFilterCount > 0);
-	const pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	const initialLoading = $derived(loading && items.length === 0);
-	const pageLoading = $derived(loading && items.length > 0);
-
-	function resetPage() {
-		if (page !== 1) page = 1;
+async function loadLibrary(currentPage: number, signal?: AbortSignal) {
+	const payload = await requestJson<{
+		items?: AdminSeries[];
+		total?: number;
+	}>(`/api/v1/library?${buildQuery(currentPage)}`, { signal });
+	const responseTotal = payload.total ?? 0;
+	const responsePageCount = Math.max(1, Math.ceil(responseTotal / pageSize));
+	if (currentPage > responsePageCount) {
+		page = responsePageCount;
+		return;
 	}
+	items = payload.items ?? [];
+	total = responseTotal;
+}
 
-	function toSeries(item: AdminSeries): Series {
-		return {
-			id: item.id,
-			slug: item.slug,
-			title: item.title,
-			coverImageUrl: item.coverImageUrl,
-			updatedAt: item.updatedAt,
-			latestChapterNumber: item.latestChapterNumber,
-			latestChapters:
-				item.latestChapters?.length
-					? item.latestChapters.slice(0, 2)
-					: item.latestChapterNumber
-						? [
-								{
-									id: `${item.id}:latest`,
-									numberText: item.latestChapterNumber,
-									createdAt: item.latestChapterAt,
-								},
-							]
-						: [],
-			comicType: item.comicType,
-			countryId: item.countryId,
-		};
-	}
-
-	let debounce: ReturnType<typeof setTimeout> | undefined;
-	$effect(() => {
-		searchInput;
-		clearTimeout(debounce);
-		debounce = setTimeout(() => {
-			search = searchInput.trim();
-		}, 280);
+function buildQuery(currentPage: number): URLSearchParams {
+	const query = new URLSearchParams({
+		page: String(currentPage),
+		pageSize: String(pageSize),
+		sort,
+		includeHidden: "true",
 	});
+	if (search) query.set("q", search);
+	if (comicType) query.set("type", comicType);
+	if (genre) query.set("genre", genre);
+	if (status) query.set("status", status);
+	if (sourceFilter !== "all") query.set("source", sourceFilter);
+	return query;
+}
 
-	let genreDebounce: ReturnType<typeof setTimeout> | undefined;
-	$effect(() => {
-		genreInput;
-		clearTimeout(genreDebounce);
-		genreDebounce = setTimeout(() => {
-			genre = genreInput.trim();
-		}, 280);
-	});
+function resetFilters() {
+	searchInput = "";
+	search = "";
+	comicType = "";
+	genreInput = "";
+	genre = "";
+	status = "";
+	sourceFilter = "all";
+	visibilityFilter = "all";
+	resetPage();
+}
 
-	async function loadSources(signal?: AbortSignal) {
-		sourceOptions = await requestJson<SourceOption[]>("/api/v1/sources", {
-			signal,
-		}).catch(() => [] as SourceOption[]);
-	}
+$effect(() => {
+	const controller = new AbortController();
+	void loadSources(controller.signal).catch(() => undefined);
+	return () => controller.abort();
+});
 
-	async function loadLibrary(currentPage: number, signal?: AbortSignal) {
-		const payload = await requestJson<{
-			items?: AdminSeries[];
-			total?: number;
-		}>(`/api/v1/library?${buildQuery(currentPage)}`, { signal });
-		const responseTotal = payload.total ?? 0;
-		const responsePageCount = Math.max(
-			1,
-			Math.ceil(responseTotal / pageSize),
-		);
-		if (currentPage > responsePageCount) {
-			page = responsePageCount;
-			return;
-		}
-		items = payload.items ?? [];
-		total = responseTotal;
-	}
-
-	function buildQuery(currentPage: number): URLSearchParams {
-		const query = new URLSearchParams({
-			page: String(currentPage),
-			pageSize: String(pageSize),
-			sort,
-			includeHidden: "true",
+$effect(() => {
+	page;
+	pageSize;
+	sort;
+	search;
+	comicType;
+	genre;
+	status;
+	sourceFilter;
+	loading = true;
+	const currentPage = page;
+	const controller = new AbortController();
+	let active = true;
+	void loadLibrary(currentPage, controller.signal)
+		.then(() => {
+			if (active) serverError = "";
+		})
+		.catch((cause: unknown) => {
+			if (!active) return;
+			if ((cause as Error)?.name === "AbortError") return;
+			serverError =
+				cause instanceof Error ? cause.message : "Server belum tersambung.";
+		})
+		.finally(() => {
+			if (active) loading = false;
 		});
-		if (search) query.set("q", search);
-		if (comicType) query.set("type", comicType);
-		if (genre) query.set("genre", genre);
-		if (status) query.set("status", status);
-		if (sourceFilter !== "all") query.set("source", sourceFilter);
-		return query;
-	}
+	return () => {
+		active = false;
+		controller.abort();
+	};
+});
 
-	function resetFilters() {
-		searchInput = "";
-		search = "";
-		comicType = "";
-		genreInput = "";
-		genre = "";
-		status = "";
-		sourceFilter = "all";
-		visibilityFilter = "all";
-		resetPage();
-	}
+$effect(() => {
+	if (!filterDialog) return;
+	if (filterOpen && !filterDialog.open) filterDialog.showModal();
+	if (!filterOpen && filterDialog.open) filterDialog.close();
+});
 
-	$effect(() => {
-		const controller = new AbortController();
-		void loadSources(controller.signal).catch(() => undefined);
-		return () => controller.abort();
-	});
-
-	$effect(() => {
-		page;
-		pageSize;
-		sort;
-		search;
-		comicType;
-		genre;
-		status;
-		sourceFilter;
-		loading = true;
-		const currentPage = page;
-		const controller = new AbortController();
-		let active = true;
-		void loadLibrary(currentPage, controller.signal)
-			.then(() => {
-				if (active) serverError = "";
-			})
-			.catch((cause: unknown) => {
-				if (!active) return;
-				if ((cause as Error)?.name === "AbortError") return;
-				serverError =
-					cause instanceof Error ? cause.message : "Server belum tersambung.";
-			})
-			.finally(() => {
-				if (active) loading = false;
-			});
-		return () => {
-			active = false;
-			controller.abort();
-		};
-	});
-
-	$effect(() => {
-		if (!filterDialog) return;
-		if (filterOpen && !filterDialog.open) filterDialog.showModal();
-		if (!filterOpen && filterDialog.open) filterDialog.close();
-	});
-
-	function closeFilter() {
-		filterOpen = false;
-	}
+function closeFilter() {
+	filterOpen = false;
+}
 </script>
 
 {#if serverError}

@@ -1,9 +1,15 @@
+<script lang="ts" module>
+/** Guard sekali-per-id agar navigasi bolak-balik & HMR tidak dobel-fire. */
+const recordedAnimeViews = new Set<string>();
+</script>
+
 <script lang="ts">
 import {
 	ArrowDown,
 	ArrowLeft,
 	ArrowUp,
 	Clapperboard,
+	Eye,
 	House,
 	Play,
 	Search,
@@ -18,10 +24,14 @@ import {
 	formatEpisodeLabel,
 	requestJson,
 } from "#lib/admin.ts";
-import { apiBase } from "#lib/api.ts";
+import { apiBase, recordView } from "#lib/api.ts";
 import BookmarkButton from "#lib/components/BookmarkButton.svelte";
+import { getReadChapterIds, refreshHistoryMeta } from "#lib/history.ts";
 
-type DetailPayload = AnimeDetail;
+type DetailPayload = AnimeDetail & {
+	viewCount?: number | null;
+	localViewCount?: number | null;
+};
 type EpisodesPayload = {
 	items?: AnimeEpisode[];
 	total?: number;
@@ -34,7 +44,7 @@ type AnimeSettings = {
 
 let { animeId }: { animeId: string } = $props();
 
-let data = $state<AnimeDetail | null>(null);
+let data = $state<DetailPayload | null>(null);
 let error = $state("");
 let thumbnailSource = $state("local");
 let loadingMore = $state(false);
@@ -43,6 +53,7 @@ let episodeSort = $state<"recent" | "oldest">("recent");
 
 // Posisi tonton tersimpan per episode (detik).
 let positions = $state<Record<string, number>>({});
+let historyIds = $state<Set<string>>(new Set());
 
 function readPositions() {
 	try {
@@ -91,6 +102,34 @@ onMount(() => {
 	)
 		.then((payload) => {
 			data = payload;
+			// Counter lokal: catat sekali per id, hanya setelah sukses dimuat.
+			const id = payload.id ?? animeId;
+			if (!recordedAnimeViews.has(id)) {
+				let already = false;
+				try {
+					already = sessionStorage.getItem(`symi:view:anime:${id}`) === "1";
+				} catch {
+					already = false;
+				}
+				recordedAnimeViews.add(id);
+				if (!already) {
+					try {
+						sessionStorage.setItem(`symi:view:anime:${id}`, "1");
+					} catch {
+						// Abaikan.
+					}
+					void recordView("anime", id).then((result) => {
+						if (
+							result &&
+							typeof result.localViewCount === "number" &&
+							data &&
+							data.id === id
+						) {
+							data = { ...data, localViewCount: result.localViewCount };
+						}
+					});
+				}
+			}
 		})
 		.catch((cause) => {
 			if ((cause as Error)?.name === "AbortError") return;
@@ -149,6 +188,31 @@ const cover = $derived(
 			? `${apiBase()}${selectedThumbnail.url}`
 			: selectedThumbnail.url
 		: null,
+);
+$effect(() => {
+	const current = data;
+	const thumbnail = cover;
+	if (!current) return;
+	refreshHistoryMeta("anime", animeId, {
+		slug: animeId,
+		title: current.title,
+		href: `/anime/${animeId}`,
+		coverUrl: thumbnail,
+	});
+	historyIds = getReadChapterIds("anime", animeId);
+	const onRefresh = () => {
+		historyIds = getReadChapterIds("anime", animeId);
+	};
+	window.addEventListener("storage", onRefresh);
+	window.addEventListener("focus", onRefresh);
+	return () => {
+		window.removeEventListener("storage", onRefresh);
+		window.removeEventListener("focus", onRefresh);
+	};
+});
+// Angka tunggal: counter lokal; fallback ke angka scraper bila backend lama.
+const displayAnimeViews = $derived(
+	data?.localViewCount ?? data?.viewCount ?? null,
 );
 const continueEpisode = $derived.by(() => {
 	if (!data) return null;
@@ -260,7 +324,7 @@ const visibleEpisodes = $derived.by(() => {
 						<p class="detail-alternative-title">{decodeEntities(data.alternativeTitle)}</p>
 					{/if}
 
-					{#if data.score !== null || data.releaseYear !== null || data.status !== null}
+					{#if data.score !== null || data.releaseYear !== null || data.status !== null || displayAnimeViews !== null}
 						<div class="detail-stats">
 							{#if data.score !== null}
 								<span>★ {data.score.toFixed(1)}</span>
@@ -270,6 +334,12 @@ const visibleEpisodes = $derived.by(() => {
 							{/if}
 							{#if data.status}
 								<span>{decodeEntities(data.status)}</span>
+							{/if}
+							{#if displayAnimeViews !== null}
+								<span>
+									<Eye class="size-5 text-muted-foreground" />
+									{displayAnimeViews.toLocaleString("id-ID")}
+								</span>
 							{/if}
 						</div>
 					{/if}
@@ -386,6 +456,7 @@ const visibleEpisodes = $derived.by(() => {
 				<div class="chapter-grid mt-4">
 					{#each visibleEpisodes as episode (episode.id)}
 						{@const released = formatDateId(episode.releasedAt)}
+						{@const watched = historyIds.has(episode.id) || positions[episode.id] !== undefined}
 						<a
 							href="/anime/watch/{episode.id}"
 							class="chapter-card group"
@@ -396,11 +467,11 @@ const visibleEpisodes = $derived.by(() => {
 								</span>
 							</span>
 							<span class="chapter-card-copy">
-								<span class="chapter-card-title">
+								<span class={watched ? "chapter-card-title text-primary" : "chapter-card-title"}>
 									{formatEpisodeLabel(episode.numberText, episode.title)}
 								</span>
 								{#if released || positions[episode.id]}
-									<span class="chapter-card-age">
+									<span class={watched ? "chapter-card-age text-primary" : "chapter-card-age"}>
 										{#if released}{released}{/if}
 										{#if positions[episode.id]}
 											{released ? " · " : ""}Lanjut {formatPosition(positions[episode.id])}

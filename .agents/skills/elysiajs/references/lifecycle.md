@@ -35,14 +35,14 @@ Register hooks before the routes or `.use(plugin)` calls they should affect. Lat
 const child = new Elysia().get("/child", () => "child");
 
 new Elysia()
-  .onBeforeHandle(() => {
-    console.log("first");
-  })
-  .use(child)
-  .onBeforeHandle(() => {
-    console.log("second");
-  })
-  .get("/parent", () => "parent");
+	.onBeforeHandle(() => {
+		console.log("first");
+	})
+	.use(child)
+	.onBeforeHandle(() => {
+		console.log("second");
+	})
+	.get("/parent", () => "parent");
 ```
 
 `/child` logs only `first`. `/parent` logs both. A route option applies only to its own route. A plugin's hooks stay local unless promoted through [scope](composition.md#hook-scope).
@@ -53,11 +53,11 @@ new Elysia()
 
 ```ts
 new Elysia()
-  .onRequest(({ request, status }) => {
-    if (request.headers.get("x-maintenance") === "true")
-      return status(503, "Temporarily unavailable");
-  })
-  .get("/", () => "ready");
+	.onRequest(({ request, status }) => {
+		if (request.headers.get("x-maintenance") === "true")
+			return status(503, "Temporarily unavailable");
+	})
+	.get("/", () => "ready");
 ```
 
 Parsers run before validation. The first non-`undefined` result becomes `body`. Parser context includes `contentType`.
@@ -75,10 +75,10 @@ The route's `parse` also accepts full content types, named custom parsers, or an
 
 ```ts
 new Elysia()
-  .parser("custom", ({ request, contentType }) => {
-    if (contentType === "application/custom") return request.text();
-  })
-  .post("/input", { parse: ["custom", "json"] }, ({ body }) => body);
+	.parser("custom", ({ request, contentType }) => {
+		if (contentType === "application/custom") return request.text();
+	})
+	.post("/input", { parse: ["custom", "json"] }, ({ body }) => body);
 ```
 
 `.onParse(fn)` registers a parser without naming it.
@@ -91,13 +91,14 @@ new Elysia()
 
 ```ts
 new Elysia().get(
-  "/private",
-  {
-    beforeHandle({ headers, status }) {
-      if (headers.authorization !== "Bearer test-token") return status(401, "Unauthorized");
-    },
-  },
-  () => "authorized",
+	"/private",
+	{
+		beforeHandle({ headers, status }) {
+			if (headers.authorization !== "Bearer test-token")
+				return status(401, "Unauthorized");
+		},
+	},
+	() => "authorized",
 );
 ```
 
@@ -113,13 +114,13 @@ import { Elysia } from "elysia";
 const sessions = new Map([["example-session", { id: "user-1" }]]);
 
 new Elysia()
-  .derive(({ cookie, status }) => {
-    const token = cookie.session.value;
-    const user = typeof token === "string" ? sessions.get(token) : undefined;
-    if (!user) return status(401, "Unauthorized");
-    return { user };
-  })
-  .get("/me", ({ user }) => ({ id: user.id }));
+	.derive(({ cookie, status }) => {
+		const token = cookie.session.value;
+		const user = typeof token === "string" ? sessions.get(token) : undefined;
+		if (!user) return status(401, "Unauthorized");
+		return { user };
+	})
+	.get("/me", ({ user }) => ({ id: user.id }));
 ```
 
 If a cookie schema requires `session`, a missing cookie fails validation with 422 before derive runs. Make it optional when missing credentials should reach the 401 branch.
@@ -132,15 +133,15 @@ Elysia releases derived values with `Symbol.asyncDispose` or `Symbol.dispose` af
 
 ```ts
 class RequestResource {
-  closed = false;
-  [Symbol.dispose]() {
-    this.closed = true;
-  }
+	closed = false;
+	[Symbol.dispose]() {
+		this.closed = true;
+	}
 }
 
 new Elysia()
-  .derive(() => ({ resource: new RequestResource() }))
-  .get("/", ({ resource }) => ({ closed: resource.closed }));
+	.derive(() => ({ resource: new RequestResource() }))
+	.get("/", ({ resource }) => ({ closed: resource.closed }));
 ```
 
 - Disposal runs after `afterResponse` and `defer` callbacks, in reverse registration order. `Symbol.asyncDispose` wins when both methods exist.
@@ -158,13 +159,13 @@ new Elysia()
 
 ```ts
 new Elysia()
-  .mapResponse(({ responseValue }) => {
-    if (typeof responseValue === "string" && responseValue.startsWith("<h1>"))
-      return new Response(responseValue, {
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
-  })
-  .get("/", () => "<h1>Hello</h1>");
+	.mapResponse(({ responseValue }) => {
+		if (typeof responseValue === "string" && responseValue.startsWith("<h1>"))
+			return new Response(responseValue, {
+				headers: { "content-type": "text/html; charset=utf-8" },
+			});
+	})
+	.get("/", () => "<h1>Hello</h1>");
 ```
 
 Elysia merges `set.headers` into the mapped response. A returned `Error` from `afterHandle` enters error handling, as it does from a handler. Returning `status()` or `problem()` sends an ordinary response. See [errors.md](errors.md) for class-specific hooks.
@@ -175,10 +176,10 @@ Use `.onAfterResponse(fn)` for shared post-response work and context `defer(fn)`
 
 ```ts
 new Elysia().get("/", ({ defer }) => {
-  defer(({ set }) => {
-    console.log("sent", set.status);
-  });
-  return "ok";
+	defer(({ set }) => {
+		console.log("sent", set.status);
+	});
+	return "ok";
 });
 ```
 

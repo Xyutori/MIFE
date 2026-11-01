@@ -1,0 +1,292 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "707e1c42-7ad8-4063-a7ba-a16ff853cf97",
+	"prevIds": ["537497c1-b096-4454-b0ad-6a6c8ffd4bb9"],
+	"footprints": [
+		{
+			"statementType": "create_table",
+			"statementTarget": ["table", "public", "content_visits"],
+			"writes": [
+				"s|tbl|public.content_visits",
+				"n|tbl|public.content_visits",
+				"e|tbl|public.content_visits",
+				"n|rel|public.content_visits",
+				"n|type|public.content_visits",
+				"n|rel|public.content_visits_pkey"
+			],
+			"reads": ["n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": [
+				"column",
+				"public",
+				"anime_episodes",
+				"local_view_count"
+			],
+			"writes": [
+				"s|col|public.anime_episodes.local_view_count",
+				"n|col|public.anime_episodes.local_view_count",
+				"e|col|public.anime_episodes.local_view_count"
+			],
+			"reads": ["n|tbl|public.anime_episodes", "n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": [
+				"column",
+				"public",
+				"anime_series",
+				"local_view_count"
+			],
+			"writes": [
+				"s|col|public.anime_series.local_view_count",
+				"n|col|public.anime_series.local_view_count",
+				"e|col|public.anime_series.local_view_count"
+			],
+			"reads": ["n|tbl|public.anime_series", "n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": ["column", "public", "chapters", "local_view_count"],
+			"writes": [
+				"s|col|public.chapters.local_view_count",
+				"n|col|public.chapters.local_view_count",
+				"e|col|public.chapters.local_view_count"
+			],
+			"reads": ["n|tbl|public.chapters", "n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": ["column", "public", "series", "local_view_count"],
+			"writes": [
+				"s|col|public.series.local_view_count",
+				"n|col|public.series.local_view_count",
+				"e|col|public.series.local_view_count"
+			],
+			"reads": ["n|tbl|public.series", "n|sch|public"]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": [
+				"index",
+				"public",
+				"content_visits",
+				"content_visits_expires_at_idx"
+			],
+			"writes": [
+				"s|idx|public.content_visits_expires_at_idx",
+				"n|idx|public.content_visits_expires_at_idx",
+				"e|idx|public.content_visits_expires_at_idx",
+				"n|rel|public.content_visits_expires_at_idx"
+			],
+			"reads": [
+				"n|tbl|public.content_visits",
+				"n|sch|public",
+				"n|col|public.content_visits.expires_at"
+			]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"name": "content_visits",
+				"isRlsEnabled": false,
+				"entityType": "tables"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "anime_episodes",
+				"name": "local_view_count",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "anime_series",
+				"name": "local_view_count",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "chapters",
+				"name": "local_view_count",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "series",
+				"name": "local_view_count",
+				"type": "integer",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "0",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "content_type",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "content_id",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "visitor_key",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "expires_at",
+				"type": "timestamp with time zone",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "created_at",
+				"type": "timestamp with time zone",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "now()",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "content_visits_expires_at_idx",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "expires_at",
+						"isExpression": false,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": false,
+				"where": null,
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "content_visits_pkey",
+				"columns": ["content_type", "content_id", "visitor_key"],
+				"nameExplicit": true,
+				"entityType": "pks"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "content_visits",
+				"name": "content_visits_type_check",
+				"value": "\"content_type\" in ('comic', 'chapter', 'anime', 'episode')",
+				"entityType": "checks"
+			}
+		}
+	]
+}

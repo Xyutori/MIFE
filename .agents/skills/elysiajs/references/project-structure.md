@@ -53,8 +53,8 @@ These three files form a complete feature. Mount `user` with `.use(user)` in `ap
 import { t, type UnwrapModels } from "elysia";
 
 export const ByIdGet = {
-  Params: t.Object({ id: t.String() }),
-  Response: t.Object({ id: t.String(), name: t.String() }),
+	Params: t.Object({ id: t.String() }),
+	Response: t.Object({ id: t.String(), name: t.String() }),
 };
 export type ByIdGet = UnwrapModels<typeof ByIdGet>;
 ```
@@ -64,7 +64,7 @@ export type ByIdGet = UnwrapModels<typeof ByIdGet>;
 import type * as UserModel from "./model";
 
 export function getUser(id: UserModel.ByIdGet["Params"]["id"]) {
-  return { id, name: "Ada" } satisfies UserModel.ByIdGet["Response"];
+	return { id, name: "Ada" } satisfies UserModel.ByIdGet["Response"];
 }
 ```
 
@@ -76,12 +76,12 @@ import * as UserModel from "./model";
 import { getUser } from "./service";
 
 export const user = new Elysia({ prefix: "/user" }).get(
-  "/:id",
-  {
-    params: UserModel.ByIdGet.Params,
-    response: UserModel.ByIdGet.Response,
-  },
-  ({ params }) => getUser(params.id),
+	"/:id",
+	{
+		params: UserModel.ByIdGet.Params,
+		response: UserModel.ByIdGet.Response,
+	},
+	({ params }) => getUser(params.id),
 );
 ```
 

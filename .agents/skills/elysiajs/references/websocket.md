@@ -9,20 +9,20 @@ import { Elysia, t } from "elysia";
 import { websocket } from "elysia/websocket";
 
 new Elysia()
-  .use(websocket())
-  .ws(
-    "/chat",
-    {
-      query: t.Object({ room: t.String() }),
-      body: t.Object({ message: t.String() }),
-      response: t.String(),
-    },
-    function* ({ query, body }) {
-      yield `Room: ${query.room}`;
-      yield body.message;
-    },
-  )
-  .listen(3000);
+	.use(websocket())
+	.ws(
+		"/chat",
+		{
+			query: t.Object({ room: t.String() }),
+			body: t.Object({ message: t.String() }),
+			response: t.String(),
+		},
+		function* ({ query, body }) {
+			yield `Room: ${query.room}`;
+			yield body.message;
+		},
+	)
+	.listen(3000);
 ```
 
 Connect to `ws://localhost:3000/chat?room=general` and send `{"message":"hello"}`. Each yield sends a separate message. Returns and yields preserve inferred response types; `ws.send()` also works.
@@ -63,18 +63,18 @@ import { Elysia, t } from "elysia";
 import { websocket } from "elysia/websocket";
 
 new Elysia()
-  .use(websocket())
-  .ws("/echo", {
-    body: t.String(),
-    response: t.String(),
-    parse(_ws, message) {
-      if (typeof message === "string") return message.trim();
-    },
-    message(_ws, message) {
-      return message.toUpperCase();
-    },
-  })
-  .listen(3000);
+	.use(websocket())
+	.ws("/echo", {
+		body: t.String(),
+		response: t.String(),
+		parse(_ws, message) {
+			if (typeof message === "string") return message.trim();
+		},
+		message(_ws, message) {
+			return message.toUpperCase();
+		},
+	})
+	.listen(3000);
 ```
 
 ## Server configuration

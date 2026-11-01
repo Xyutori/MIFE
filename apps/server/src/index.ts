@@ -21,6 +21,7 @@ import { archiveRoutes } from "./routes/archive";
 import { authRoutes } from "./routes/auth";
 import { bookmarkRoutes } from "./routes/bookmarks";
 import { comicRoutes } from "./routes/comic";
+import { commentRoutes } from "./routes/comments";
 import { imagesRoutes } from "./routes/images";
 import { libraryAdminRoutes } from "./routes/library-admin";
 import { preferenceRoutes } from "./routes/preferences";
@@ -66,6 +67,7 @@ new Elysia()
 	.use(comicRoutes)
 	.use(animeRoutes)
 	.use(bookmarkRoutes)
+	.use(commentRoutes)
 	.use(preferenceRoutes)
 	.use(scrapesRoutes)
 	.use(imagesRoutes)

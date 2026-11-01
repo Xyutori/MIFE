@@ -1,94 +1,97 @@
 <script lang="ts">
-	import { X } from "lucide-svelte";
-	import type { Snippet } from "svelte";
+import { X } from "lucide-svelte";
+import type { Snippet } from "svelte";
+import { portal } from "#lib/actions/portal.ts";
 
-	interface Props {
-		open: boolean;
-		onClose: () => void;
-		title: string;
-		description?: string;
-		children: Snippet;
-		footer?: Snippet;
-		dismissible?: boolean;
-		showHandle?: boolean;
-		showClose?: boolean;
-	}
+interface Props {
+	open: boolean;
+	onClose: () => void;
+	title: string;
+	description?: string;
+	children: Snippet;
+	footer?: Snippet;
+	dismissible?: boolean;
+	showHandle?: boolean;
+	showClose?: boolean;
+}
 
-	let {
-		open,
-		onClose,
-		title,
-		description,
-		children,
-		footer,
-		dismissible = true,
-		showHandle = true,
-		showClose = true,
-	}: Props = $props();
+let {
+	open,
+	onClose,
+	title,
+	description,
+	children,
+	footer,
+	dismissible = true,
+	showHandle = true,
+	showClose = true,
+}: Props = $props();
 
-	let closeButton: HTMLButtonElement | null = $state(null);
-	let dragY = $state(0);
-	let dragging = $state(false);
+let closeButton: HTMLButtonElement | null = $state(null);
+let dragY = $state(0);
+let dragging = $state(false);
 
-	let startY = 0;
-	let startTime = 0;
-	let lastY = 0;
-	let lastTime = 0;
+let startY = 0;
+let startTime = 0;
+let lastY = 0;
+let lastTime = 0;
 
-	function handleClose() {
-		if (!dismissible) return;
-		onClose();
-	}
+function handleClose() {
+	if (!dismissible) return;
+	onClose();
+}
 
-	function onHandlePointerDown(event: PointerEvent) {
-		if (!dismissible) return;
-		dragging = true;
-		startY = event.clientY;
-		lastY = event.clientY;
-		startTime = performance.now();
-		lastTime = startTime;
+function onHandlePointerDown(event: PointerEvent) {
+	if (!dismissible) return;
+	dragging = true;
+	startY = event.clientY;
+	lastY = event.clientY;
+	startTime = performance.now();
+	lastTime = startTime;
+	dragY = 0;
+	(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+}
+
+function onHandlePointerMove(event: PointerEvent) {
+	if (!dragging) return;
+	dragY = Math.max(0, event.clientY - startY);
+	lastY = event.clientY;
+	lastTime = performance.now();
+}
+
+function onHandlePointerUp() {
+	if (!dragging) return;
+	dragging = false;
+	const dy = dragY;
+	const dt = Math.max(1, lastTime - startTime);
+	const velocity = (lastY - startY) / dt;
+	if (dy >= 90 || velocity >= 0.6) {
 		dragY = 0;
-		(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+		handleClose();
+		return;
 	}
+	dragY = 0;
+}
 
-	function onHandlePointerMove(event: PointerEvent) {
-		if (!dragging) return;
-		dragY = Math.max(0, event.clientY - startY);
-		lastY = event.clientY;
-		lastTime = performance.now();
+$effect(() => {
+	if (!open) return;
+	closeButton?.focus();
+	document.body.style.overflow = "hidden";
+	function onKeyDown(event: KeyboardEvent) {
+		if (event.key === "Escape") handleClose();
 	}
-
-	function onHandlePointerUp() {
-		if (!dragging) return;
-		dragging = false;
-		const dy = dragY;
-		const dt = Math.max(1, lastTime - startTime);
-		const velocity = (lastY - startY) / dt;
-		if (dy >= 90 || velocity >= 0.6) {
-			dragY = 0;
-			handleClose();
-			return;
-		}
-		dragY = 0;
-	}
-
-	$effect(() => {
-		if (!open) return;
-		closeButton?.focus();
-		document.body.style.overflow = "hidden";
-		function onKeyDown(event: KeyboardEvent) {
-			if (event.key === "Escape") handleClose();
-		}
-		document.addEventListener("keydown", onKeyDown);
-		return () => {
-			document.body.style.overflow = "";
-			document.removeEventListener("keydown", onKeyDown);
-		};
-	});
+	document.addEventListener("keydown", onKeyDown);
+	return () => {
+		document.body.style.overflow = "";
+		document.removeEventListener("keydown", onKeyDown);
+	};
+});
 </script>
 
 {#if open}
-	<div class="fixed inset-0 z-[100]">
+	<!-- z-index inline (bukan hanya class) agar overlay selalu menang
+		dari konten halaman apapun, termasuk bila CSS tertinggal. -->
+	<div class="fixed inset-0 z-[999]" style="z-index: 999;" use:portal>
 		<button
 			type="button"
 			aria-label="Tutup dialog"

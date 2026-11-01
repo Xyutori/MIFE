@@ -50,7 +50,7 @@ const groups = [
 	{
 		label: "Platform",
 		items: [
-		    { href: "/", label: "Beranda", icon: Home },
+			{ href: "/", label: "Beranda", icon: Home },
 			{ href: "/admin", label: "Comic", icon: LibraryBig },
 			{ href: "/admin/anime", label: "Anime", icon: Clapperboard },
 		],

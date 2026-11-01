@@ -10,7 +10,12 @@ interface Props {
 	showByType?: boolean;
 }
 
-let { mediaSummary, pendingMedia, showStats = true, showByType = true }: Props = $props();
+let {
+	mediaSummary,
+	pendingMedia,
+	showStats = true,
+	showByType = true,
+}: Props = $props();
 
 const fmt = (value: number) => value.toLocaleString("id-ID");
 const prettyKey = (key: string) => key.replaceAll("_", " ");

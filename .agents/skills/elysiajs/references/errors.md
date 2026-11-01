@@ -26,12 +26,12 @@ class UserLookupFailed extends Error {}
 declare function findUser(id: string): Promise<User | UserLookupFailed>;
 
 new Elysia()
-  .onError(UserLookupFailed, problem(503, { detail: "User lookup failed" }))
-  .get("/users/:id", async ({ params }) => {
-    const user = await findUser(params.id);
-    if (user instanceof Error) return user;
-    return { id: user.id, name: user.name };
-  });
+	.onError(UserLookupFailed, problem(503, { detail: "User lookup failed" }))
+	.get("/users/:id", async ({ params }) => {
+		const user = await findUser(params.id);
+		if (user instanceof Error) return user;
+		return { id: user.id, name: user.name };
+	});
 ```
 
 Keep the concrete error classes in each return union, either through inference or an explicit annotation such as `User | UserLookupFailed`. Returning the error through every layer lets Elysia include its mapped response in Eden and OpenAPI types. Throw or rethrow unexpected errors so error hooks can handle them.
@@ -39,7 +39,9 @@ Keep the concrete error classes in each return union, either through inference o
 ```ts
 import { Elysia, problem } from "elysia";
 
-new Elysia().get("/conflict", () => problem(409, { detail: "Username is taken" }));
+new Elysia().get("/conflict", () =>
+	problem(409, { detail: "Username is taken" }),
+);
 ```
 
 `problem()` fills `type`, `title`, and `status`. Both helpers accept numeric statuses or names such as `'Conflict'`. Assigning `set.status` changes the runtime status without preserving the status/body relationship in inference.
@@ -65,9 +67,12 @@ import { Elysia, NotFound, problem } from "elysia";
 class DatabaseUnavailable extends Error {}
 
 new Elysia()
-  .onError(NotFound, ({ status }) => status(404, "Not found"))
-  .onError(DatabaseUnavailable, problem(503, { detail: "Please try again later" }))
-  .get("/users", () => new DatabaseUnavailable());
+	.onError(NotFound, ({ status }) => status(404, "Not found"))
+	.onError(
+		DatabaseUnavailable,
+		problem(503, { detail: "Please try again later" }),
+	)
+	.get("/users", () => new DatabaseUnavailable());
 ```
 
 Returning the mapped class adds the mapped response to the route type. For library errors, catch and return expected failures; rethrow unknown ones. See [composition.md](composition.md) for hook scope.
@@ -80,15 +85,15 @@ Returning the mapped class adds the mapped response to the route type. For libra
 import { Elysia, HTTPError } from "elysia";
 
 class OutOfCredit extends HTTPError.id("OUT_OF_CREDIT", 402) {
-  readonly detail = "Top up to continue";
+	readonly detail = "Top up to continue";
 
-  constructor(readonly balance: number) {
-    super();
-  }
+	constructor(readonly balance: number) {
+		super();
+	}
 
-  extension() {
-    return { balance: this.balance };
-  }
+	extension() {
+		return { balance: this.balance };
+	}
 }
 
 new Elysia().get("/credit", () => new OutOfCredit(30));
@@ -143,11 +148,11 @@ Set `error` on a schema to customize its failure response:
 import { Elysia, t } from "elysia";
 
 new Elysia().get(
-  "/:id",
-  {
-    params: t.Object({ id: t.Number({ error: "id must be a number" }) }),
-  },
-  ({ params }) => params.id,
+	"/:id",
+	{
+		params: t.Object({ id: t.Number({ error: "id must be a number" }) }),
+	},
+	({ params }) => params.id,
 );
 ```
 

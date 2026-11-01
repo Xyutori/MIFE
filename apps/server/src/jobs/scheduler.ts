@@ -1,12 +1,32 @@
 import { getScrapeSettingsFresh } from "../scrape-settings";
+import { db } from "../services";
+import { cleanupExpiredVisits } from "../visits/record";
 import { runScheduledAnimeScrapeForToday } from "./anime";
 import { runScheduledScrapeForToday } from "./metadata";
 import { resumeInterruptedWorkers } from "./recovery";
+import { latestDueSlot } from "./schedule-slots";
 
 const TICK_INTERVAL_MS = 30_000;
 
 let interval: ReturnType<typeof setInterval> | undefined;
 let tickInProgress = false;
+/** Tanggal UTC terakhir cleanup ledger view lokal (YYYY-MM-DD). */
+let lastVisitCleanupDay = "";
+
+/**
+ * Hapus baris `content_visits` kedaluwarsa sekali sehari (low-priority,
+ * bukan hot path; error ditelan agar tick scrape tidak terganggu).
+ */
+async function maybeCleanupExpiredVisits() {
+	try {
+		const today = new Date().toISOString().slice(0, 10);
+		if (lastVisitCleanupDay === today) return;
+		lastVisitCleanupDay = today;
+		await cleanupExpiredVisits(db);
+	} catch {
+		// Low-priority: abaikan, coba lagi besok (guard tanggal sudah maju).
+	}
+}
 
 function describeErrorChain(error: unknown) {
 	const chain: Array<{
@@ -48,45 +68,15 @@ function describeErrorChain(error: unknown) {
 	return chain;
 }
 
-function currentTimeInZone(timeZone: string) {
-	const parts = new Intl.DateTimeFormat("en-GB", {
-		timeZone,
-		hour: "2-digit",
-		minute: "2-digit",
-		hourCycle: "h23",
-	}).formatToParts(new Date());
-	const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
-	const minute = Number(
-		parts.find((part) => part.type === "minute")?.value ?? 0,
-	);
-	return hour * 60 + minute;
-}
-
-function scheduledMinute(dailyTime: string) {
-	const [hourText, minuteText] = dailyTime.split(":");
-	const hour = Number(hourText);
-	const minute = Number(minuteText);
-	if (
-		!Number.isInteger(hour) ||
-		!Number.isInteger(minute) ||
-		hour < 0 ||
-		hour > 23 ||
-		minute < 0 ||
-		minute > 59
-	) {
-		return 20 * 60;
-	}
-	return hour * 60 + minute;
-}
-
 /**
  * Start background scrape workers with the service identity (no user session).
  *
  * Runs an immediate tick, then every 30 seconds:
  * 1. resume workers left behind by a restart (`resumeInterruptedWorkers`),
- * 2. once the local time in `SCRAPE_TIME_ZONE` reaches `SCRAPE_DAILY_TIME`,
- *    launch the daily incremental scrape for every comic/anime workspace
- *    (per-source idempotency via `last_auto_scrape_date`).
+ * 2. hitung slot jadwal terakhir yang sudah lewat hari ini dari
+ *    `dailyTimes` admin (zona `timeZone`), lalu jalankan incremental scrape
+ *    sekali per slot per sumber untuk tiap workspace comic/anime
+ *    (idempotensi per-slot via `last_auto_scrape_date`+`last_auto_scrape_slot`).
  *
  * The orchestrator (`apps/server/src/index.ts`) wires this exactly once at
  * boot: `startBackgroundJobs()`.
@@ -102,15 +92,13 @@ export function startBackgroundJobs() {
 			// admin maksimal 30 detik (interval tick).
 			const settings = (await getScrapeSettingsFresh()).values;
 			await resumeInterruptedWorkers();
-			if (
-				currentTimeInZone(settings.timeZone) <
-				scheduledMinute(settings.dailyTime)
-			)
-				return;
+			await maybeCleanupExpiredVisits();
+			const slot = latestDueSlot(settings.timeZone, settings.dailyTimes);
+			if (!slot) return;
 			const results = await Promise.allSettled([
-				runScheduledScrapeForToday("comic", settings.timeZone),
-				runScheduledScrapeForToday("superkomik", settings.timeZone),
-				runScheduledAnimeScrapeForToday(settings.timeZone),
+				runScheduledScrapeForToday("comic", settings.timeZone, slot),
+				runScheduledScrapeForToday("superkomik", settings.timeZone, slot),
+				runScheduledAnimeScrapeForToday(settings.timeZone, slot),
 			]);
 			for (const [index, result] of results.entries()) {
 				if (result.status === "rejected") {

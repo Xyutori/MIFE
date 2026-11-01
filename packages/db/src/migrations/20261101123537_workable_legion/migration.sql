@@ -1,0 +1,1 @@
+ALTER TABLE "source_scrape_state" ADD COLUMN "last_auto_scrape_slot" text;

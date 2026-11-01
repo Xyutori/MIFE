@@ -1,3 +1,8 @@
+<script lang="ts" module>
+/** Guard sekali-per-id agar navigasi bolak-balik & HMR tidak dobel-fire. */
+const recordedEpisodeViews = new Set<string>();
+</script>
+
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
@@ -10,7 +15,9 @@
 		type EpisodeMedia,
 		type EpisodeMediaSource,
 	} from "#lib/admin.ts";
+	import { recordView } from "#lib/api.ts";
 	import Select from "#lib/components/ui/select/Select.svelte";
+	import { markChapterRead } from "#lib/history.ts";
 
 	type AnimeSettings = {
 		settings?: {
@@ -208,6 +215,40 @@
 			.then((value) => {
 				payload = value;
 				selectedId = preferredStream(value.sources)?.id ?? "";
+				// Counter lokal: catat sekali per episode saat media mulai dimuat
+				// (bukan per detik playback), hanya setelah sukses dimuat.
+				if (!recordedEpisodeViews.has(episodeId)) {
+					let already = false;
+					try {
+						already =
+							sessionStorage.getItem(`symi:view:episode:${episodeId}`) === "1";
+					} catch {
+						already = false;
+					}
+					recordedEpisodeViews.add(episodeId);
+					if (!already) {
+						try {
+							sessionStorage.setItem(`symi:view:episode:${episodeId}`, "1");
+						} catch {
+							// Abaikan.
+						}
+						void recordView("episode", episodeId);
+					}
+				}
+				markChapterRead(
+					"anime",
+					value.animeId,
+					{
+						id: episodeId,
+						numberText: value.episode.numberText,
+						title: value.episode.title,
+					},
+					{
+						slug: value.animeId,
+						title: value.animeTitle,
+						href: `/anime/${value.animeId}`,
+					},
+				);
 			})
 			.catch((cause) => {
 				if ((cause as Error)?.name === "AbortError") return;

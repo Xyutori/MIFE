@@ -1,3 +1,8 @@
+<script lang="ts" module>
+/** Guard sekali-per-id agar navigasi bolak-balik & HMR tidak dobel-fire. */
+const recordedChapterViews = new Set<string>();
+</script>
+
 <script lang="ts">
 import {
 	ArrowDown,
@@ -22,7 +27,9 @@ import {
 	getSeriesChapters,
 	type PagePayload,
 	pageImageUrl,
+	recordView,
 } from "#lib/api.ts";
+import { markChapterRead } from "#lib/history.ts";
 import {
 	type LocalFormat,
 	readerUrl,
@@ -264,11 +271,62 @@ async function load(signal: AbortSignal) {
 
 // Muat ulang saat identitas chapter berubah.
 let loadKey = $derived(`${chapterId}|${seriesSlug}|${chapterNumber}`);
+let lastMarkedChapterId: string | null = null;
 $effect(() => {
 	loadKey;
 	const controller = new AbortController();
 	void load(controller.signal);
 	return () => controller.abort();
+});
+
+// Catat history sekali per chapter yang berhasil dimuat.
+$effect(() => {
+	const id = chapter?.id;
+	if (!id || id === lastMarkedChapterId) return;
+	const current = chapter;
+	if (!current) return;
+	lastMarkedChapterId = id;
+	markChapterRead(
+		"comic",
+		current.seriesId,
+		{
+			id: current.id,
+			numberText: current.numberText,
+			normalizedNumber: current.normalizedNumber,
+			title: current.title,
+		},
+		{
+			slug: current.seriesSlug,
+			title: current.seriesTitle,
+			href: `/komik/${current.seriesSlug}`,
+		},
+	);
+});
+
+// Counter lokal: catat sekali per chapter, hanya setelah chapter sukses
+// dimuat (bukan per halaman/gambar, bukan saat loading/error).
+$effect(() => {
+	const current = chapter;
+	if (!current || loading || error) return;
+	const id = current.id;
+	if (recordedChapterViews.has(id)) return;
+	let already = false;
+	try {
+		already = sessionStorage.getItem(`symi:view:chapter:${id}`) === "1";
+	} catch {
+		already = false;
+	}
+	if (already) {
+		recordedChapterViews.add(id);
+		return;
+	}
+	recordedChapterViews.add(id);
+	try {
+		sessionStorage.setItem(`symi:view:chapter:${id}`, "1");
+	} catch {
+		// Abaikan.
+	}
+	void recordView("chapter", id);
 });
 
 onMount(() => {

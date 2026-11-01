@@ -1,17 +1,17 @@
 <script lang="ts">
-	import emblaCarouselSvelte from "embla-carousel-svelte";
-	import { cn, type WithElementRef } from "#lib/utils.js";
-	import { getEmblaContext } from "./context.js";
-	import type { HTMLAttributes } from "svelte/elements";
+import emblaCarouselSvelte from "embla-carousel-svelte";
+import type { HTMLAttributes } from "svelte/elements";
+import { cn, type WithElementRef } from "#lib/utils.js";
+import { getEmblaContext } from "./context.js";
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
+let {
+	ref = $bindable(null),
+	class: className,
+	children,
+	...restProps
+}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 
-	const emblaCtx = getEmblaContext("<Carousel.Content/>");
+const emblaCtx = getEmblaContext("<Carousel.Content/>");
 </script>
 
 <div

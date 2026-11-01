@@ -1,0 +1,30 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "e6b888d3-d19e-405c-8232-731c7381efd5",
+	"prevIds": ["571699c1-e528-48e9-8d0f-cff7d2e9c1c0"],
+	"footprints": [
+		{
+			"statementType": "alter_check",
+			"statementTarget": ["table", "public", "comments"],
+			"writes": ["s|ck|public.comments.comments_target_type_check"],
+			"reads": [
+				"n|tbl|public.comments",
+				"n|sch|public",
+				"n|col|public.comments.target_type",
+				"e|col|public.comments.target_type"
+			],
+			"sqlHash": "a1fcc77e5dd9d770"
+		}
+	],
+	"deltas": [
+		{
+			"op": "alter",
+			"key": "checks\u0000[\"public\",\"comments\",\"comments_target_type_check\"]",
+			"set": {
+				"value": "\"target_type\" in ('comic_chapter', 'anime_episode', 'comic_series', 'anime_series')"
+			}
+		}
+	]
+}

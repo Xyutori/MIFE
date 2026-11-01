@@ -1,5 +1,6 @@
 <script lang="ts">
 import { ArrowLeft, BookOpen } from "lucide-svelte";
+import CommentSection from "#lib/components/comments/CommentSection.svelte";
 import Pagination from "#lib/components/Pagination.svelte";
 import {
 	getSuperKomikDetail,
@@ -135,6 +136,10 @@ const people = $derived(
 				label="chapter super komik"
 				onChange={(next) => (pageNum = next)}
 			/>
+		</section>
+
+		<section class="mt-14" aria-label="Komentar">
+			<CommentSection targetType="comic_series" targetId={seriesId} />
 		</section>
 	</main>
 {/if}

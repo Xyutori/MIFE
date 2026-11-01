@@ -1,34 +1,34 @@
 <script lang="ts">
-	import { Database, ImageDown, LoaderCircle, RefreshCw } from "lucide-svelte";
+import { Database, ImageDown, LoaderCircle, RefreshCw } from "lucide-svelte";
 
-	export type ScrapeControlsBusy = "" | "incremental" | "full" | "media";
+export type ScrapeControlsBusy = "" | "incremental" | "full" | "media";
 
-	interface Props {
-		busy?: ScrapeControlsBusy | string;
-		disableScrape?: boolean;
-		disableMedia?: boolean;
-		title?: string;
-		description?: string;
-		onIncremental: () => void;
-		onFull: () => void;
-		onSaveMedia: () => void;
-		onRefresh?: () => void;
-	}
+interface Props {
+	busy?: ScrapeControlsBusy | string;
+	disableScrape?: boolean;
+	disableMedia?: boolean;
+	title?: string;
+	description?: string;
+	onIncremental: () => void;
+	onFull: () => void;
+	onSaveMedia: () => void;
+	onRefresh?: () => void;
+}
 
-	let {
-		busy = "",
-		disableScrape = false,
-		disableMedia = false,
-		title = "Kontrol scrape",
-		description = "Jalankan scrape incremental atau penuh, lalu simpan media.",
-		onIncremental,
-		onFull,
-		onSaveMedia,
-		onRefresh,
-	}: Props = $props();
+let {
+	busy = "",
+	disableScrape = false,
+	disableMedia = false,
+	title = "Kontrol scrape",
+	description = "Jalankan scrape incremental atau penuh, lalu simpan media.",
+	onIncremental,
+	onFull,
+	onSaveMedia,
+	onRefresh,
+}: Props = $props();
 
-	const scrapeDisabled = $derived(busy !== "" || disableScrape);
-	const mediaDisabled = $derived(busy !== "" || disableMedia);
+const scrapeDisabled = $derived(busy !== "" || disableScrape);
+const mediaDisabled = $derived(busy !== "" || disableMedia);
 </script>
 
 <section class="rounded-3xl border bg-card p-4 sm:p-5" aria-label={title}>

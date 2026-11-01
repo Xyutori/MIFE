@@ -1,41 +1,43 @@
 <script lang="ts">
-	import BannerHero from "#lib/components/comic/BannerHero.svelte";
-	import LoginGate from "#lib/components/comic/LoginGate.svelte";
-	import SeriesCard from "#lib/components/comic/SeriesCard.svelte";
-	import { authClient } from "#lib/auth-client.ts";
-	import { getSeriesChapters, mockBanners, mockSeries } from "../_mock";
-	import type { Country } from "../_mock";
+import { authClient } from "#lib/auth-client.ts";
+import BannerHero from "#lib/components/comic/BannerHero.svelte";
+import LoginGate from "#lib/components/comic/LoginGate.svelte";
+import SeriesCard from "#lib/components/comic/SeriesCard.svelte";
+import type { Country } from "../_mock";
+import { getSeriesChapters, mockBanners, mockSeries } from "../_mock";
 
-	type CountryFilter = "all" | Country;
+type CountryFilter = "all" | Country;
 
-	const STATUS_OPTIONS = ["all", "Ongoing", "Completed", "Hiatus"] as const;
+const STATUS_OPTIONS = ["all", "Ongoing", "Completed", "Hiatus"] as const;
 
-	const session = authClient.useSession();
+const session = authClient.useSession();
 
-	let query = $state("");
-	let country = $state<CountryFilter>("all");
-	let status = $state<string>("all");
+let query = $state("");
+let country = $state<CountryFilter>("all");
+let status = $state<string>("all");
 
-	const filtered = $derived(
-		mockSeries.filter((series) => {
-			if (country !== "all" && series.country !== country) return false;
-			if (status !== "all" && series.status !== status) return false;
-			const q = query.trim().toLowerCase();
-			if (q && !series.title.toLowerCase().includes(q)) return false;
-			return true;
-		}),
-	);
-	const results = $derived(filtered.slice(0, 9));
+const filtered = $derived(
+	mockSeries.filter((series) => {
+		if (country !== "all" && series.country !== country) return false;
+		if (status !== "all" && series.status !== status) return false;
+		const q = query.trim().toLowerCase();
+		if (q && !series.title.toLowerCase().includes(q)) return false;
+		return true;
+	}),
+);
+const results = $derived(filtered.slice(0, 9));
 
-	const continueSeries = mockSeries[0];
-	const continueChapters = continueSeries ? getSeriesChapters(continueSeries.id) : [];
-	const continueChapter = continueChapters[0];
+const continueSeries = mockSeries[0];
+const continueChapters = continueSeries
+	? getSeriesChapters(continueSeries.id)
+	: [];
+const continueChapter = continueChapters[0];
 
-	function countryClass(active: boolean): string {
-		return active
-			? "bg-[#E01B41] text-white"
-			: "bg-neutral-800 text-neutral-300 hover:bg-neutral-700";
-	}
+function countryClass(active: boolean): string {
+	return active
+		? "bg-[#E01B41] text-white"
+		: "bg-neutral-800 text-neutral-300 hover:bg-neutral-700";
+}
 </script>
 
 <div class="mx-auto w-full max-w-[1440px] space-y-8 px-4 pb-28 pt-6 lg:pb-12">

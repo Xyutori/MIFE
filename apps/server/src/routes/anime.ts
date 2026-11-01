@@ -142,7 +142,7 @@ export const animeRoutes = new Elysia({ name: "anime-routes" })
 		"/api/v1/anime/library/:id/episodes",
 		async ({ params, query, set }) => {
 			const page = clamp(query.page, 1, 1_000_000);
-			const pageSize = clamp(query.pageSize, 40, 100);
+			const pageSize = clamp(query.pageSize, 10, 100);
 			const result = await cacheRemember(
 				`anime:episodes:${JSON.stringify({ id: params.id, page, pageSize })}`,
 				async () => {

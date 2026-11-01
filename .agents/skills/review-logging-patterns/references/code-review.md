@@ -93,7 +93,7 @@ For each API route/handler, check:
 ```typescript
 // ❌ Missing request context
 export default defineEventHandler(async (event) => {
-  // No logging at all, or scattered console.logs
+	// No logging at all, or scattered console.logs
 });
 ```
 
@@ -131,9 +131,9 @@ console.log("Total:", cart.total);
 
 // ✅ After
 log.info({
-  action: "checkout",
-  user: { id: user.id },
-  cart: { items: cart.items.length, total: cart.total },
+	action: "checkout",
+	user: { id: user.id },
+	cart: { items: cart.items.length, total: cart.total },
 });
 ```
 
@@ -180,10 +180,10 @@ throw new Error("Failed to create user");
 
 // ✅ After
 throw createError({
-  message: "Failed to create user",
-  why: "Email address already registered",
-  fix: "Use a different email or log in to existing account",
-  link: "https://your-app.com/docs/registration",
+	message: "Failed to create user",
+	why: "Email address already registered",
+	fix: "Use a different email or log in to existing account",
+	link: "https://your-app.com/docs/registration",
 });
 ```
 
@@ -192,22 +192,22 @@ throw createError({
 ```typescript
 // ❌ Before
 try {
-  await externalApi.call();
+	await externalApi.call();
 } catch (error) {
-  throw new Error("API call failed");
+	throw new Error("API call failed");
 }
 
 // ✅ After
 try {
-  await externalApi.call();
+	await externalApi.call();
 } catch (error) {
-  throw createError({
-    message: "External API call failed",
-    why: `API returned: ${error.message}`,
-    fix: "Check API credentials and try again",
-    link: "https://api-docs.example.com/errors",
-    cause: error,
-  });
+	throw createError({
+		message: "External API call failed",
+		why: `API returned: ${error.message}`,
+		fix: "Check API credentials and try again",
+		link: "https://api-docs.example.com/errors",
+		cause: error,
+	});
 }
 ```
 
@@ -216,23 +216,23 @@ try {
 ```typescript
 // ❌ Before
 try {
-  await riskyOperation();
+	await riskyOperation();
 } catch (error) {
-  console.error("Operation failed:", error);
-  throw error;
+	console.error("Operation failed:", error);
+	throw error;
 }
 
 // ✅ After
 try {
-  await riskyOperation();
+	await riskyOperation();
 } catch (error) {
-  log.error(error, { step: "riskyOperation" });
-  throw createError({
-    message: "Operation failed",
-    why: error.message,
-    fix: "Check input and retry",
-    cause: error,
-  });
+	log.error(error, { step: "riskyOperation" });
+	throw createError({
+		message: "Operation failed",
+		why: error.message,
+		fix: "Check input and retry",
+		cause: error,
+	});
 }
 ```
 

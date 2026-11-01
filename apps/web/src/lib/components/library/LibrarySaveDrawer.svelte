@@ -1,135 +1,107 @@
 <script lang="ts">
-	import { Check, LoaderCircle, Plus, X } from "lucide-svelte";
-	import { type BookmarkGroup, getBookmarks } from "#lib/api.ts";
-	import { authClient } from "#lib/auth-client.ts";
-	import {
-		addBookmarkItem,
-		createBookmarkGroup,
-		removeBookmarkItem,
-	} from "#lib/components/library/bookmark-groups.ts";
-	import BottomSheet from "#lib/components/ui/BottomSheet.svelte";
-	import type { BookmarkType } from "#lib/reader.ts";
-	import { decodeEntities } from "#lib/text.ts";
+import { Check, LoaderCircle, Plus, X } from "lucide-svelte";
+import { portal } from "#lib/actions/portal.ts";
+import { type BookmarkGroup, getBookmarks } from "#lib/api.ts";
+import { authClient } from "#lib/auth-client.ts";
+import {
+	addBookmarkItem,
+	createBookmarkGroup,
+	removeBookmarkItem,
+} from "#lib/components/library/bookmark-groups.ts";
+import BottomSheet from "#lib/components/ui/BottomSheet.svelte";
+import type { BookmarkType } from "#lib/reader.ts";
+import { decodeEntities } from "#lib/text.ts";
 
-	interface Props {
-		open: boolean;
-		type: BookmarkType;
-		seriesId: string;
-		onClose: () => void;
-		onMembershipChange?: (saved: boolean) => void;
+interface Props {
+	open: boolean;
+	type: BookmarkType;
+	seriesId: string;
+	onClose: () => void;
+	onMembershipChange?: (saved: boolean) => void;
+}
+
+let { open, type, seriesId, onClose, onMembershipChange }: Props = $props();
+
+const session = authClient.useSession();
+
+let groups = $state<BookmarkGroup[]>([]);
+let loading = $state(false);
+let busyId = $state<string | null>(null);
+let newName = $state("");
+let creating = $state(false);
+let error = $state("");
+let nameError = $state("");
+let showCreate = $state(false);
+let createInput: HTMLInputElement | null = $state(null);
+
+function notifyMembership(next: BookmarkGroup[]) {
+	onMembershipChange?.(
+		next.some((group) =>
+			group.items.some((item) => item.seriesId === seriesId),
+		),
+	);
+}
+
+async function loadGroups() {
+	if (!$session.data?.user) {
+		groups = [];
+		return;
 	}
-
-	let { open, type, seriesId, onClose, onMembershipChange }: Props = $props();
-
-	const session = authClient.useSession();
-
-	let groups = $state<BookmarkGroup[]>([]);
-	let loading = $state(false);
-	let busyId = $state<string | null>(null);
-	let newName = $state("");
-	let creating = $state(false);
-	let error = $state("");
-	let nameError = $state("");
-	let showCreate = $state(false);
-	let createInput: HTMLInputElement | null = $state(null);
-
-	function notifyMembership(next: BookmarkGroup[]) {
-		onMembershipChange?.(
-			next.some((group) =>
-				group.items.some((item) => item.seriesId === seriesId),
-			),
-		);
+	loading = true;
+	error = "";
+	try {
+		groups = await getBookmarks(type);
+		notifyMembership(groups);
+	} catch (cause) {
+		if (cause instanceof DOMException && cause.name === "AbortError") return;
+		error =
+			cause instanceof Error ? cause.message : "Daftar library gagal dimuat.";
+	} finally {
+		loading = false;
 	}
+}
 
-	async function loadGroups() {
-		if (!$session.data?.user) {
-			groups = [];
-			return;
-		}
-		loading = true;
+$effect(() => {
+	if (open) {
+		newName = "";
 		error = "";
-		try {
-			groups = await getBookmarks(type);
-			notifyMembership(groups);
-		} catch (cause) {
-			if (cause instanceof DOMException && cause.name === "AbortError") return;
-			error =
-				cause instanceof Error ? cause.message : "Daftar library gagal dimuat.";
-		} finally {
-			loading = false;
-		}
+		nameError = "";
+		showCreate = false;
+		void loadGroups();
 	}
+});
 
-	$effect(() => {
-		if (open) {
-			newName = "";
-			error = "";
-			nameError = "";
-			showCreate = false;
-			void loadGroups();
-		}
-	});
+$effect(() => {
+	if (showCreate) createInput?.focus();
+});
 
-	$effect(() => {
-		if (showCreate) createInput?.focus();
-	});
+// Derivasikan status simpan tiap grup dari data client-side (tanpa endpoint baru).
+function membershipOf(group: BookmarkGroup) {
+	const item = group.items.find((entry) => entry.seriesId === seriesId);
+	return item
+		? { saved: true as const, itemId: item.id }
+		: { saved: false as const, itemId: null };
+}
 
-	// Derivasikan status simpan tiap grup dari data client-side (tanpa endpoint baru).
-	function membershipOf(group: BookmarkGroup) {
-		const item = group.items.find((entry) => entry.seriesId === seriesId);
-		return item
-			? { saved: true as const, itemId: item.id }
-			: { saved: false as const, itemId: null };
-	}
-
-	async function toggle(group: BookmarkGroup) {
-		if (busyId || creating) return;
-		const membership = membershipOf(group);
-		const previous = groups;
-		busyId = group.id;
-		error = "";
-		if (membership.saved && membership.itemId) {
-			groups = previous.map((entry) =>
-				entry.id === group.id
-					? {
-							...entry,
-							items: entry.items.filter((item) => item.id !== membership.itemId),
-							itemCount: Math.max(0, entry.itemCount - 1),
-						}
-					: entry,
-			);
-			notifyMembership(groups);
-			try {
-				await removeBookmarkItem(group.id, membership.itemId);
-				groups = await getBookmarks(type);
-				notifyMembership(groups);
-			} catch (cause) {
-				groups = previous;
-				notifyMembership(groups);
-				error =
-					cause instanceof Error
-						? cause.message
-						: "Judul gagal dikeluarkan dari library.";
-			} finally {
-				busyId = null;
-			}
-			return;
-		}
+async function toggle(group: BookmarkGroup) {
+	if (busyId || creating) return;
+	const membership = membershipOf(group);
+	const previous = groups;
+	busyId = group.id;
+	error = "";
+	if (membership.saved && membership.itemId) {
 		groups = previous.map((entry) =>
 			entry.id === group.id
 				? {
 						...entry,
-						items: [
-							...entry.items,
-							{ id: `temp-${seriesId}`, seriesId, title: "" },
-						],
-						itemCount: entry.itemCount + 1,
+						items: entry.items.filter((item) => item.id !== membership.itemId),
+						itemCount: Math.max(0, entry.itemCount - 1),
 					}
 				: entry,
 		);
 		notifyMembership(groups);
 		try {
-			await addBookmarkItem(group.id, seriesId);
+			await removeBookmarkItem(group.id, membership.itemId);
 			groups = await getBookmarks(type);
 			notifyMembership(groups);
 		} catch (cause) {
@@ -138,61 +110,90 @@
 			error =
 				cause instanceof Error
 					? cause.message
-					: "Judul gagal ditambahkan ke library.";
+					: "Judul gagal dikeluarkan dari library.";
 		} finally {
 			busyId = null;
 		}
+		return;
 	}
-
-	function clearNameError() {
-		const name = newName.trim();
-		if (name.length >= 3 && name.length <= 50) nameError = "";
+	groups = previous.map((entry) =>
+		entry.id === group.id
+			? {
+					...entry,
+					items: [
+						...entry.items,
+						{ id: `temp-${seriesId}`, seriesId, title: "" },
+					],
+					itemCount: entry.itemCount + 1,
+				}
+			: entry,
+	);
+	notifyMembership(groups);
+	try {
+		await addBookmarkItem(group.id, seriesId);
+		groups = await getBookmarks(type);
+		notifyMembership(groups);
+	} catch (cause) {
+		groups = previous;
+		notifyMembership(groups);
+		error =
+			cause instanceof Error
+				? cause.message
+				: "Judul gagal ditambahkan ke library.";
+	} finally {
+		busyId = null;
 	}
+}
 
-	async function createGroup(event: SubmitEvent) {
-		event.preventDefault();
-		const name = newName.trim();
-		if (name.length < 3 || name.length > 50) {
-			nameError = "min 3 karakter, max 50 karakter";
-			return;
-		}
-		if (creating) return;
-		creating = true;
-		error = "";
-		nameError = "";
-		try {
-			const group = await createBookmarkGroup(type, name);
-			groups = [...groups, group];
-			showCreate = false;
-			newName = "";
-		} catch (cause) {
-			error = cause instanceof Error ? cause.message : "Library gagal dibuat.";
-		} finally {
-			creating = false;
-		}
+function clearNameError() {
+	const name = newName.trim();
+	if (name.length >= 3 && name.length <= 50) nameError = "";
+}
+
+async function createGroup(event: SubmitEvent) {
+	event.preventDefault();
+	const name = newName.trim();
+	if (name.length < 3 || name.length > 50) {
+		nameError = "min 3 karakter, max 50 karakter";
+		return;
 	}
-
-	function cancelCreate() {
+	if (creating) return;
+	creating = true;
+	error = "";
+	nameError = "";
+	try {
+		const group = await createBookmarkGroup(type, name);
+		groups = [...groups, group];
 		showCreate = false;
 		newName = "";
-		nameError = "";
+	} catch (cause) {
+		error = cause instanceof Error ? cause.message : "Library gagal dibuat.";
+	} finally {
+		creating = false;
 	}
+}
 
-	function handleCreateKey(event: KeyboardEvent) {
-		if (event.key === "Escape") {
-			event.stopPropagation();
-			cancelCreate();
-		}
-	}
+function cancelCreate() {
+	showCreate = false;
+	newName = "";
+	nameError = "";
+}
 
-	function handleKey(event: KeyboardEvent) {
-		if (event.key !== "Escape") return;
-		if (showCreate) {
-			cancelCreate();
-			return;
-		}
-		onClose();
+function handleCreateKey(event: KeyboardEvent) {
+	if (event.key === "Escape") {
+		event.stopPropagation();
+		cancelCreate();
 	}
+}
+
+function handleKey(event: KeyboardEvent) {
+	if (event.key !== "Escape") return;
+	if (showCreate) {
+		cancelCreate();
+		return;
+	}
+	onClose();
+}
 </script>
 
 <svelte:window onkeydown={handleKey} />
@@ -280,9 +281,9 @@
 				{#each groups as group (group.id)}
 					{@const membership = membershipOf(group)}
 					<li
-						class="flex items-center gap-3 rounded-2xl border p-2.5 transition {membership.saved ? "border-white/25 bg-white/5" : "border-border bg-background/60"}"
+						class="flex items-center gap-3 rounded-2xl border p-2.5 transition {membership.saved ? "border-primary/40 bg-primary/10" : "border-border bg-background/60"}"
 					>
-						<p class="min-w-0 flex-1 truncate font-semibold text-sm">
+						<p class="min-w-0 flex-1 truncate font-semibold text-sm {membership.saved ? "text-primary" : ""}">
 							{decodeEntities(group.name)}
 						</p>
 						<button
@@ -297,7 +298,7 @@
 								? `Keluarkan dari ${group.name}`
 								: `Simpan ke ${group.name}`}
 							class="grid size-10 shrink-0 place-items-center rounded-full transition disabled:opacity-60 {membership.saved
-								? "bg-white/10 text-white hover:bg-destructive/15 hover:text-destructive"
+								? "bg-primary/15 text-primary hover:bg-destructive/15 hover:text-destructive"
 								: "bg-secondary text-foreground hover:bg-primary hover:text-primary-foreground"}"
 						>
 							{#if busyId === group.id}
@@ -328,7 +329,7 @@
 			</div>
 		</BottomSheet>
 	</div>
-	<div class="fixed inset-0 z-[100] hidden sm:block" role="presentation">
+	<div class="fixed inset-0 z-[999] hidden sm:block" style="z-index: 999;" role="presentation" use:portal>
 		<button
 			type="button"
 			aria-label="Tutup drawer simpan"

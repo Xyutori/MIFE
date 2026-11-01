@@ -187,6 +187,7 @@ export type ComicType = string | null;
 export interface CatalogChapter {
 	id: string;
 	numberText: string;
+	publishedAt?: string | null;
 	createdAt?: string | null;
 }
 
@@ -200,6 +201,8 @@ export interface Series {
 	latestChapters?: CatalogChapter[];
 	comicType: ComicType;
 	countryId: string | null;
+	/** Counter lokal (angka tunggal user). Absen bila backend lama. */
+	localViewCount?: number | null;
 }
 
 export interface LibraryResponse {
@@ -245,6 +248,8 @@ export interface SeriesDetail {
 	formats: string[];
 	comicType: ComicType;
 	viewCount: number | null;
+	/** Counter lokal (angka tunggal user). Absen bila backend lama. */
+	localViewCount?: number | null;
 	rating: number | null;
 	bookmarkCount: number | null;
 	popularityRank: number | null;
@@ -404,7 +409,7 @@ export async function getSeriesChapters(
 ): Promise<{ items: ChapterListItem[]; total: number; hasMore: boolean }> {
 	const search = new URLSearchParams({
 		page: String(params.page ?? 1),
-		pageSize: String(params.pageSize ?? 30),
+		pageSize: String(params.pageSize ?? 10),
 		sort: params.sort ?? "recent",
 	});
 	if (params.q?.trim()) search.set("q", params.q.trim());
@@ -467,4 +472,47 @@ export async function getBookmarks(
 	}
 	const payload = await readJson<{ groups?: BookmarkGroup[] }>(response);
 	return payload.groups ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Counter views lokal (angka tunggal user)
+// ---------------------------------------------------------------------------
+
+export type ViewKind = "comic" | "chapter" | "anime" | "episode";
+
+export interface RecordViewResult {
+	counted: boolean;
+	localViewCount: number;
+}
+
+/**
+ * Catat satu kunjungan ke counter lokal. Fire-and-forget: tidak pernah
+ * melempar ke UI — kegagalan (offline/backend lama) mengembalikan `null`.
+ * Panggil sekali per id setelah konten utama sukses dimuat.
+ */
+export async function recordView(
+	kind: ViewKind,
+	id: string,
+): Promise<RecordViewResult | null> {
+	try {
+		const response = await fetch(`${apiBase()}/api/v1/views`, {
+			method: "POST",
+			credentials: "include",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ kind, id }),
+		});
+		if (!response.ok) return null;
+		const payload = (await response.json().catch(() => null)) as {
+			counted?: unknown;
+			localViewCount?: unknown;
+		} | null;
+		if (!payload || typeof payload.localViewCount !== "number") return null;
+		return {
+			counted: payload.counted === true,
+			localViewCount: payload.localViewCount,
+		};
+	} catch (error) {
+		console.debug("[views] record gagal:", error);
+		return null;
+	}
 }

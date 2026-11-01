@@ -1,5 +1,5 @@
 <script lang="ts">
-	import SourcesPanel from "#lib/components/admin/SourcesPanel.svelte";
+import SourcesPanel from "#lib/components/admin/SourcesPanel.svelte";
 </script>
 
 <svelte:head>

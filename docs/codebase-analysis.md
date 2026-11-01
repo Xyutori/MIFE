@@ -38,24 +38,24 @@ Klaim Explorer belum dibaca ulang **[E]**:
 
 ## 3. Modul Terkait Kebutuhan
 
-| Modul | Path | Tanggung jawab |
-|---|---|---|
-| server bootstrap | `apps/server/src/index.ts` **[T]** | Elysia setup, CORS, adminGate, mount 10 route, seed, background jobs |
-| komik/library API | `apps/server/src/routes/mife.ts` **[E]** | Katalog komik: library, chapters, pages, images (endpoint `GET /api/v1/library` di `mife.ts:222`) |
-| anime API | `apps/server/src/routes/anime.ts` **[E]** | Read anime (`GET /api/v1/anime/sources` di `anime.ts:91`); adapter situs `apps/server/src/anime/sources` (otakudesu/kuramanime/oploverz — side-effect import di `index.ts:16`) |
-| bookmark API | `apps/server/src/routes/bookmarks.ts` **[E]** | CRUD grup bookmark + item (`GET /api/v1/bookmarks` di `:354`, auth required) |
-| preferences API | `apps/server/src/routes/preferences.ts` **[E]** | Preferensi user (`GET` di `:90`, session required) |
-| scrape jobs | `apps/server/src/routes/scrapes.ts`, `apps/server/src/jobs/scheduler.ts` **[E]** | Admin scrape job routes (`:103-289`), background scheduler (`:94-138`), worker-lease |
-| library admin | `apps/server/src/routes/library-admin.ts` **[E]** | Mutasi admin (`:54,78,99`) |
-| archive | `apps/server/src/routes/archive.ts` **[E]** | Export/import (`:289,390`) |
-| images | `apps/server/src/routes/images.ts` **[E]** | Image proxy/repair (`:18,38`) |
-| admin users/roles | `apps/server/src/routes/admin.ts` **[E]** | `GET /api/admin/users` (`:36`, permission `users.read`) |
-| auth | `apps/server/src/routes/auth.ts`, `packages/auth/src/index.ts` **[E]** | Profile (`GET/PATCH /api/auth/profile` `:148/:174`), better-auth handler |
-| katalog read | `apps/server/src/catalog/series.ts`, `apps/server/src/catalog/anime.ts` **[E]** | Query FTS/ILIKE + pagination |
-| storage/cache | `apps/server/src/storage/s3.ts`, `apps/server/src/cache/index.ts` **[E]** | Private bucket S3 + proxy; in-memory LRU `cacheRemember` |
-| RBAC | `apps/server/src/rbac/{seed,bootstrap,permissions,gates}.ts` **[E]** | Seed role, bootstrap admin, `isAdmin/hasPermission` (raw SQL), `adminGate` (403 non-admin di `/api/admin`) |
-| web anime/komik UI | `apps/web/src/lib/components/{anime,catalog,comic}/`, `src/routes/{anime,komik,baca,library,super-komik}/` **[E/T]** | Card/carousel/filter/reader views |
-| web admin UI | `apps/web/src/lib/components/admin/`, `src/routes/admin/` **[E]** | Gate/shell/panel statistik, scrape runs, media integrity, roles, users |
+| Modul              | Path                                                                                                                 | Tanggung jawab                                                                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| server bootstrap   | `apps/server/src/index.ts` **[T]**                                                                                   | Elysia setup, CORS, adminGate, mount 10 route, seed, background jobs                                                                                                           |
+| komik/library API  | `apps/server/src/routes/mife.ts` **[E]**                                                                             | Katalog komik: library, chapters, pages, images (endpoint `GET /api/v1/library` di `mife.ts:222`)                                                                              |
+| anime API          | `apps/server/src/routes/anime.ts` **[E]**                                                                            | Read anime (`GET /api/v1/anime/sources` di `anime.ts:91`); adapter situs `apps/server/src/anime/sources` (otakudesu/kuramanime/oploverz — side-effect import di `index.ts:16`) |
+| bookmark API       | `apps/server/src/routes/bookmarks.ts` **[E]**                                                                        | CRUD grup bookmark + item (`GET /api/v1/bookmarks` di `:354`, auth required)                                                                                                   |
+| preferences API    | `apps/server/src/routes/preferences.ts` **[E]**                                                                      | Preferensi user (`GET` di `:90`, session required)                                                                                                                             |
+| scrape jobs        | `apps/server/src/routes/scrapes.ts`, `apps/server/src/jobs/scheduler.ts` **[E]**                                     | Admin scrape job routes (`:103-289`), background scheduler (`:94-138`), worker-lease                                                                                           |
+| library admin      | `apps/server/src/routes/library-admin.ts` **[E]**                                                                    | Mutasi admin (`:54,78,99`)                                                                                                                                                     |
+| archive            | `apps/server/src/routes/archive.ts` **[E]**                                                                          | Export/import (`:289,390`)                                                                                                                                                     |
+| images             | `apps/server/src/routes/images.ts` **[E]**                                                                           | Image proxy/repair (`:18,38`)                                                                                                                                                  |
+| admin users/roles  | `apps/server/src/routes/admin.ts` **[E]**                                                                            | `GET /api/admin/users` (`:36`, permission `users.read`)                                                                                                                        |
+| auth               | `apps/server/src/routes/auth.ts`, `packages/auth/src/index.ts` **[E]**                                               | Profile (`GET/PATCH /api/auth/profile` `:148/:174`), better-auth handler                                                                                                       |
+| katalog read       | `apps/server/src/catalog/series.ts`, `apps/server/src/catalog/anime.ts` **[E]**                                      | Query FTS/ILIKE + pagination                                                                                                                                                   |
+| storage/cache      | `apps/server/src/storage/s3.ts`, `apps/server/src/cache/index.ts` **[E]**                                            | Private bucket S3 + proxy; in-memory LRU `cacheRemember`                                                                                                                       |
+| RBAC               | `apps/server/src/rbac/{seed,bootstrap,permissions,gates}.ts` **[E]**                                                 | Seed role, bootstrap admin, `isAdmin/hasPermission` (raw SQL), `adminGate` (403 non-admin di `/api/admin`)                                                                     |
+| web anime/komik UI | `apps/web/src/lib/components/{anime,catalog,comic}/`, `src/routes/{anime,komik,baca,library,super-komik}/` **[E/T]** | Card/carousel/filter/reader views                                                                                                                                              |
+| web admin UI       | `apps/web/src/lib/components/admin/`, `src/routes/admin/` **[E]**                                                    | Gate/shell/panel statistik, scrape runs, media integrity, roles, users                                                                                                         |
 
 ## 4. Database Schema dan Relasi
 

@@ -1,5 +1,11 @@
 <script lang="ts">
-import { BookOpen, LoaderCircle, Search, SlidersHorizontal, X } from "lucide-svelte";
+import {
+	BookOpen,
+	LoaderCircle,
+	Search,
+	SlidersHorizontal,
+	X,
+} from "lucide-svelte";
 import { onMount } from "svelte";
 import {
 	apiBase,
@@ -38,7 +44,9 @@ const pageCount = $derived(Math.max(1, Math.ceil(total / pageSize)));
 const activeFilterCount = $derived(
 	(comicType ? 1 : 0) + (debouncedGenre ? 1 : 0) + (status ? 1 : 0),
 );
-const hasActiveFilter = $derived(Boolean(debouncedQuery) || activeFilterCount > 0);
+const hasActiveFilter = $derived(
+	Boolean(debouncedQuery) || activeFilterCount > 0,
+);
 const initialLoading = $derived(loading && items.length === 0);
 const pageLoading = $derived(loading && items.length > 0);
 

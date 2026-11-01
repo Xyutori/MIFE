@@ -1,6 +1,7 @@
 <script lang="ts">
 import {
 	BookMarked,
+	Clapperboard,
 	LoaderCircle,
 	Pencil,
 	Plus,
@@ -8,9 +9,10 @@ import {
 	X,
 } from "lucide-svelte";
 import { onMount } from "svelte";
-import { type BookmarkGroup, getBookmarks } from "#lib/api.ts";
+import { formatEpisodeLabel } from "#lib/admin.ts";
+import { type BookmarkGroup, coverUrl, getBookmarks } from "#lib/api.ts";
 import { authClient } from "#lib/auth-client.ts";
-import SegmentedTabs from "#lib/components/ui/SegmentedTabs.svelte";
+import { comicTypeInfo } from "#lib/components/catalog/comic-types.ts";
 import {
 	createBookmarkGroup,
 	deleteBookmarkGroup,
@@ -19,12 +21,25 @@ import {
 } from "#lib/components/library/bookmark-groups.ts";
 import LibraryGroupDialogs from "#lib/components/library/LibraryGroupDialogs.svelte";
 import LoginCta from "#lib/components/profile/LoginCta.svelte";
+import ConfirmDialog from "#lib/components/ui/ConfirmDialog.svelte";
+import SegmentedTabs from "#lib/components/ui/SegmentedTabs.svelte";
+import {
+	clearHistory,
+	getHistoryList,
+	type HistorySeriesEntry,
+} from "#lib/history.ts";
 import { type BookmarkType, syncBookmarksToServer } from "#lib/reader.ts";
-import { decodeEntities } from "#lib/text.ts";
+import {
+	decodeEntities,
+	formatChapterLabel,
+	formatTimeAgo,
+} from "#lib/text.ts";
 
 const session = authClient.useSession();
 
 let type = $state<BookmarkType>("comic");
+let tab = $state<BookmarkType | "history">("comic");
+let histories = $state<HistorySeriesEntry[]>([]);
 let groups = $state<BookmarkGroup[]>([]);
 let loading = $state(true);
 let error = $state("");
@@ -97,24 +112,50 @@ async function syncSilently() {
 	}
 }
 
+function refreshHistories() {
+	histories = getHistoryList();
+}
+
 onMount(() => {
 	const params = new URLSearchParams(window.location.search);
-	if (params.get("type") === "anime") type = "anime";
+	const initial = params.get("type");
+	if (initial === "comic" || initial === "anime" || initial === "history") {
+		tab = initial;
+		if (initial !== "history") type = initial;
+	}
+	if (tab === "history") refreshHistories();
+	const refresh = () => {
+		if (tab === "history") refreshHistories();
+	};
+	window.addEventListener("storage", refresh);
+	window.addEventListener("focus", refresh);
+	return () => {
+		window.removeEventListener("storage", refresh);
+		window.removeEventListener("focus", refresh);
+	};
 });
 
 $effect(() => {
+	tab;
 	type;
 	$session;
+	if (tab === "history") return;
 	void loadGroups();
 });
 
 $effect(() => {
 	// Sinkronisasi last-write-wins setiap kali sesi login tersedia (diam-diam).
+	if (tab === "history") return;
 	if ($session.data?.user) void syncSilently();
 });
 
-function switchType(next: BookmarkType) {
-	type = next;
+$effect(() => {
+	if (tab === "history") refreshHistories();
+});
+
+function switchType(next: BookmarkType | "history") {
+	tab = next;
+	if (next !== "history") type = next;
 	creating = false;
 	draftName = "";
 	createError = "";
@@ -122,6 +163,14 @@ function switchType(next: BookmarkType) {
 	deleteTarget = null;
 	actionError = "";
 	history.replaceState(null, "", `/library?type=${next}`);
+}
+
+let confirmClearHistory = $state(false);
+
+function clearAllHistory() {
+	clearHistory();
+	refreshHistories();
+	confirmClearHistory = false;
 }
 
 function openCreate() {
@@ -221,9 +270,10 @@ async function handleDelete() {
 		tabs={[
 			{ id: "comic", label: "Comic" },
 			{ id: "anime", label: "Anime" },
+			{ id: "history", label: "History" },
 		]}
-		value={type}
-		onChange={(id) => switchType(id as BookmarkType)}
+		value={tab}
+		onChange={(id) => switchType(id as BookmarkType | "history")}
 		ariaLabel="Jenis library"
 		class="mt-5"
 	/>
@@ -234,7 +284,117 @@ async function handleDelete() {
 		</div>
 	{/if}
 
-	{#if phase === "pending-session" || phase === "loading"}
+	{#if tab === "history"}
+		<section aria-label="History bacaan" class="mt-6">
+			{#if histories.length === 0}
+				<div class="mt-4 grid place-items-center gap-2 rounded-2xl border bg-card p-10 text-center">
+					<BookMarked class="size-10 text-muted-foreground" aria-hidden="true" />
+					<p class="font-bold">Belum ada history</p>
+					<p class="max-w-sm text-muted-foreground text-sm">
+						Chapter yang kamu baca dan episode yang kamu tonton akan muncul di
+						sini.
+					</p>
+				</div>
+			{:else}
+				<div class="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+					{#each histories as entry (entry.type + ":" + entry.seriesId)}
+						{@const cover = entry.type === "comic"
+							? coverUrl(entry.seriesId, entry.coverUpdatedAt ?? undefined)
+							: (entry.coverUrl ?? null)}
+						{@const latest = entry.chapters.slice(0, 2)}
+						{@const typeInfo =
+							entry.type === "comic"
+								? (comicTypeInfo(entry.comicType ?? null, entry.countryId ?? null) ?? null)
+								: null}
+						<a
+							href={`/library/history/${entry.type}/${encodeURIComponent(entry.seriesId)}`}
+							class="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/40"
+						>
+							<span class="relative block aspect-[.69] overflow-hidden bg-secondary">
+								{#if cover}
+									<img
+										src={cover}
+										alt=""
+										loading="lazy"
+										class="size-full object-cover transition duration-500 group-hover:scale-[1.04]"
+									/>
+								{:else}
+									<span class="grid size-full place-items-center" aria-hidden="true">
+										{#if entry.type === "comic"}
+											<BookMarked class="size-10 text-muted-foreground" />
+										{:else}
+											<Clapperboard class="size-10 text-muted-foreground" />
+										{/if}
+									</span>
+								{/if}
+								<div class="pointer-events-none absolute top-2 left-2 z-10 flex items-center gap-1.5">
+									{#if typeInfo}
+										<span
+											class="grid size-7 place-items-center rounded-lg border border-white/15 bg-black/65 text-base shadow-lg backdrop-blur sm:size-8 sm:text-lg"
+											role="img"
+											aria-label={`${typeInfo.label} dari ${typeInfo.country}`}
+											title={`${typeInfo.label} · ${typeInfo.country}`}
+										>
+											{typeInfo.flag}
+										</span>
+									{/if}
+									<span class="rounded-full bg-black/60 px-2.5 py-1 font-semibold text-white text-[11px] backdrop-blur">
+										{entry.type === "comic" ? "Comic" : "Anime"}
+									</span>
+								</div>
+							</span>
+							<span class="flex flex-1 flex-col gap-1 p-2 sm:p-4">
+								<span class="line-clamp-2 min-w-0 font-semibold text-sm">
+									{decodeEntities(entry.title)}
+								</span>
+								{#if latest.length > 0}
+									<ul class="mt-1 grid gap-1" aria-label="Terakhir dibaca">
+										{#each latest as chapter (chapter.id)}
+											{@const ago = formatTimeAgo(chapter.readAt)}
+											<li class="flex min-h-9 min-w-0 items-center justify-between gap-2 rounded-xl bg-secondary px-3 text-foreground text-xs leading-4">
+												<span class="truncate">
+													{entry.type === "comic"
+														? formatChapterLabel(chapter.numberText, chapter.title)
+														: formatEpisodeLabel(chapter.numberText, chapter.title)}
+												</span>
+												{#if ago}
+													<time
+														datetime={chapter.readAt}
+														title={`${ago} lalu`}
+														aria-label={`${ago} lalu`}
+														class="shrink-0 rounded-md bg-card px-2 py-1 font-semibold text-[11px] text-secondary-foreground"
+													>
+														{ago}
+													</time>
+												{/if}
+											</li>
+										{/each}
+									</ul>
+								{/if}
+							</span>
+						</a>
+					{/each}
+				</div>
+				<div class="mt-6 text-center">
+					<button
+						type="button"
+						onclick={() => (confirmClearHistory = true)}
+						class="min-h-11 px-4 text-muted-foreground text-sm underline underline-offset-4 transition hover:text-destructive"
+					>
+						Bersihkan history
+					</button>
+				</div>
+			{/if}
+		</section>
+		<ConfirmDialog
+			open={confirmClearHistory}
+			title="Bersihkan history?"
+			message="Seluruh history bacaan dan tontonan di perangkat ini akan dihapus. Tindakan ini tidak bisa dibatalkan."
+			confirmLabel="Bersihkan"
+			onClose={() => (confirmClearHistory = false)}
+			onConfirm={clearAllHistory}
+		/>
+	{:else if phase === "pending-session" || phase === "loading"}
 		<div class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" aria-label="Memuat library">
 			{#each [0, 1, 2, 3, 4] as i (i)}
 				<div class="h-64 animate-pulse rounded-2xl bg-card" aria-hidden="true"></div>

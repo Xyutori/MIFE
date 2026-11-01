@@ -90,7 +90,7 @@ export async function getSuperKomikDetail(
 	signal?: AbortSignal,
 ): Promise<SuperKomikDetail> {
 	const response = await fetchUntilConnected(
-		`${apiBase()}/api/v1/super-komik/series/${encodeURIComponent(seriesId)}?page=${page}&pageSize=100`,
+		`${apiBase()}/api/v1/super-komik/series/${encodeURIComponent(seriesId)}?page=${page}&pageSize=10`,
 		{ signal, credentials: "include" },
 	);
 	return readJson<SuperKomikDetail>(response);

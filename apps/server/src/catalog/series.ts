@@ -158,6 +158,7 @@ const seriesCardSelection = {
 	isVisible: series.isVisible,
 	comicType: series.comicType,
 	countryId: series.countryId,
+	localViewCount: series.localViewCount,
 };
 
 const seriesDetailSelection = {
@@ -188,6 +189,7 @@ export type SeriesCardRow = {
 	isVisible: boolean;
 	comicType: string | null;
 	countryId: string | null;
+	localViewCount: number;
 };
 
 export type SeriesDetailRow = SeriesCardRow & {
@@ -209,6 +211,7 @@ export type SeriesDetailRow = SeriesCardRow & {
 export type CatalogChapter = {
 	id: string;
 	numberText: string;
+	publishedAt: string | null;
 	createdAt: string | null;
 };
 
@@ -236,6 +239,7 @@ export function seriesCardResponse(
 		sources: extra.sources ?? [],
 		comicType: row.comicType,
 		countryId: row.countryId,
+		localViewCount: row.localViewCount ?? 0,
 	};
 }
 
@@ -254,6 +258,7 @@ export function seriesHeroResponse(
 		...seriesCardResponse(row, { latestChapters: extra.latestChapters }),
 		description: row.description,
 		viewCount: row.viewCount,
+		localViewCount: row.localViewCount ?? 0,
 		rating: row.rating,
 		featureType: extra.featureType,
 		featureLabel: extra.featureLabel,
@@ -397,6 +402,7 @@ export async function listSeries(db: Database, opts: SeriesListOptions) {
 					seriesId: chapters.seriesId,
 					id: chapters.id,
 					numberText: chapters.numberText,
+					publishedAt: chapters.publishedAt,
 					createdAt: chapters.createdAt,
 					updatedAt: chapters.updatedAt,
 					position:
@@ -429,6 +435,7 @@ export async function listSeries(db: Database, opts: SeriesListOptions) {
 		list.push({
 			id: chapter.id,
 			numberText: chapter.numberText,
+			publishedAt: toIso(chapter.publishedAt),
 			createdAt: toIso(chapter.createdAt ?? chapter.updatedAt),
 		});
 		latestMap.set(chapter.seriesId, list);
@@ -626,7 +633,7 @@ export async function getSeriesDetail(
 			.from(seriesSources)
 			.innerJoin(sources, eq(seriesSources.sourceId, sources.id))
 			.where(eq(seriesSources.seriesId, row.id)),
-		getChapterPage(db, row.id, { page: 1, pageSize: 30 }),
+		getChapterPage(db, row.id, { page: 1, pageSize: 10 }),
 	]);
 	return {
 		id: row.id,
@@ -643,6 +650,7 @@ export async function getSeriesDetail(
 		formats: parseJsonList(row.formatsJson),
 		comicType: row.comicType,
 		viewCount: row.viewCount,
+		localViewCount: row.localViewCount ?? 0,
 		rating: row.rating,
 		bookmarkCount: row.bookmarkCount,
 		popularityRank: row.popularityRank,
@@ -674,6 +682,7 @@ export type ChapterDetail = {
 	seriesId: string;
 	seriesTitle: string;
 	seriesSlug: string;
+	localViewCount: number;
 	previousChapterId: string | null;
 	previousChapterNumber: string | null;
 	nextChapterId: string | null;
@@ -693,6 +702,7 @@ export async function getChapterDetail(
 			numberText: chapters.numberText,
 			normalizedNumber: chapters.normalizedNumber,
 			title: chapters.title,
+			localViewCount: chapters.localViewCount,
 			seriesId: series.id,
 			seriesTitle: series.title,
 			seriesNormalizedTitle: series.normalizedTitle,
@@ -738,6 +748,7 @@ export async function getChapterDetail(
 		seriesId: row.seriesId,
 		seriesTitle: row.seriesTitle,
 		seriesSlug: seriesSlug(row.seriesNormalizedTitle),
+		localViewCount: row.localViewCount ?? 0,
 		previousChapterId: siblings[index + 1]?.id ?? null,
 		previousChapterNumber: siblings[index + 1]?.normalizedNumber ?? null,
 		nextChapterId: index > 0 ? (siblings[index - 1]?.id ?? null) : null,
@@ -1022,6 +1033,7 @@ export async function getHeroItems(db: Database, workspaceId: string) {
 					seriesId: chapters.seriesId,
 					id: chapters.id,
 					numberText: chapters.numberText,
+					publishedAt: chapters.publishedAt,
 					createdAt: chapters.createdAt,
 					updatedAt: chapters.updatedAt,
 				})
@@ -1035,6 +1047,7 @@ export async function getHeroItems(db: Database, workspaceId: string) {
 			latestBySeries.set(chapter.seriesId, {
 				id: chapter.id,
 				numberText: chapter.numberText,
+				publishedAt: toIso(chapter.publishedAt),
 				createdAt: toIso(chapter.createdAt ?? chapter.updatedAt),
 			});
 	return {
@@ -1211,6 +1224,7 @@ export async function listSuperKomikCatalog(
 			formats: parseJsonList(row.formatsJson),
 			rating: row.rating,
 			viewCount: row.viewCount,
+			localViewCount: row.localViewCount ?? 0,
 		})),
 		page: opts.page,
 		pageSize: opts.pageSize,
@@ -1286,6 +1300,7 @@ export async function getSuperKomikSeriesPage(
 			formats: parseJsonList(row.formatsJson),
 			rating: row.rating,
 			viewCount: row.viewCount,
+			localViewCount: row.localViewCount ?? 0,
 		},
 		chapters: chapterPage.items.map((item) => ({
 			id: item.chapter.id,

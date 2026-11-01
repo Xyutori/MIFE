@@ -1,39 +1,39 @@
 <script lang="ts">
-	import { Eye, RotateCcw } from "lucide-svelte";
+import { Eye, RotateCcw } from "lucide-svelte";
 
-	export interface ScrapeHistoryItem {
-		id: string;
-		title: string;
-		subinfo: string;
-		canRetry: boolean;
-		disabled?: boolean;
-	}
+export interface ScrapeHistoryItem {
+	id: string;
+	title: string;
+	subinfo: string;
+	canRetry: boolean;
+	disabled?: boolean;
+}
 
-	export interface ScrapeHistoryEvent {
-		id: string;
-		level: string;
-		message: string;
-	}
+export interface ScrapeHistoryEvent {
+	id: string;
+	level: string;
+	message: string;
+}
 
-	interface Props {
-		items: ScrapeHistoryItem[];
-		expandedId: string;
-		events: Record<string, ScrapeHistoryEvent[]>;
-		onToggleDetail: (id: string) => void;
-		onRetry: (id: string) => void;
-		showDetail?: boolean;
-		emptyLabel?: string;
-	}
+interface Props {
+	items: ScrapeHistoryItem[];
+	expandedId: string;
+	events: Record<string, ScrapeHistoryEvent[]>;
+	onToggleDetail: (id: string) => void;
+	onRetry: (id: string) => void;
+	showDetail?: boolean;
+	emptyLabel?: string;
+}
 
-	let {
-		items,
-		expandedId,
-		events,
-		onToggleDetail,
-		onRetry,
-		showDetail = true,
-		emptyLabel = "Belum ada riwayat.",
-	}: Props = $props();
+let {
+	items,
+	expandedId,
+	events,
+	onToggleDetail,
+	onRetry,
+	showDetail = true,
+	emptyLabel = "Belum ada riwayat.",
+}: Props = $props();
 </script>
 
 <section class="rounded-3xl border bg-card p-4 sm:p-5" aria-label="Riwayat scrape">

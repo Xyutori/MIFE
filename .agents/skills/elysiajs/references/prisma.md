@@ -12,37 +12,37 @@ import { Elysia, t } from "elysia";
 import { prisma } from "./database";
 
 const publicUser = t.Object({
-  id: t.String(),
-  email: t.String({ format: "email" }),
+	id: t.String(),
+	email: t.String({ format: "email" }),
 });
 
 export const userRoutes = new Elysia()
-  .post(
-    "/users",
-    {
-      body: t.Object({ email: t.String({ format: "email" }) }),
-      response: publicUser,
-    },
-    ({ body }) =>
-      prisma.user.create({
-        data: body,
-        select: { id: true, email: true },
-      }),
-  )
-  .get(
-    "/users/:id",
-    {
-      response: { 200: publicUser, 404: t.String() },
-    },
-    async ({ params, status }) => {
-      const user = await prisma.user.findUnique({
-        where: { id: params.id },
-        select: { id: true, email: true },
-      });
-      if (!user) return status(404, "User not found");
-      return user;
-    },
-  );
+	.post(
+		"/users",
+		{
+			body: t.Object({ email: t.String({ format: "email" }) }),
+			response: publicUser,
+		},
+		({ body }) =>
+			prisma.user.create({
+				data: body,
+				select: { id: true, email: true },
+			}),
+	)
+	.get(
+		"/users/:id",
+		{
+			response: { 200: publicUser, 404: t.String() },
+		},
+		async ({ params, status }) => {
+			const user = await prisma.user.findUnique({
+				where: { id: params.id },
+				select: { id: true, email: true },
+			});
+			if (!user) return status(404, "User not found");
+			return user;
+		},
+	);
 ```
 
 Select public fields explicitly. Map expected database failures, such as unique constraint violations, to declared HTTP errors. See [errors](errors.md).

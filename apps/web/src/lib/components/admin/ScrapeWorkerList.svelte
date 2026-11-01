@@ -1,28 +1,28 @@
 <script lang="ts">
-	import { Pause, Play, X } from "lucide-svelte";
+import { Pause, Play, X } from "lucide-svelte";
 
-	export interface ScrapeWorkerItem {
-		id: string;
-		title: string;
-		subinfo: string;
-		progress: number | null;
-		paused: boolean;
-		disabled?: boolean;
-	}
+export interface ScrapeWorkerItem {
+	id: string;
+	title: string;
+	subinfo: string;
+	progress: number | null;
+	paused: boolean;
+	disabled?: boolean;
+}
 
-	interface Props {
-		workers: ScrapeWorkerItem[];
-		onToggle: (id: string) => void;
-		onCancel: (id: string) => void;
-		emptyLabel?: string;
-	}
+interface Props {
+	workers: ScrapeWorkerItem[];
+	onToggle: (id: string) => void;
+	onCancel: (id: string) => void;
+	emptyLabel?: string;
+}
 
-	let {
-		workers,
-		onToggle,
-		onCancel,
-		emptyLabel = "Tidak ada worker.",
-	}: Props = $props();
+let {
+	workers,
+	onToggle,
+	onCancel,
+	emptyLabel = "Tidak ada worker.",
+}: Props = $props();
 </script>
 
 <section class="rounded-3xl border bg-card p-4 sm:p-5" aria-label="Worker aktif">

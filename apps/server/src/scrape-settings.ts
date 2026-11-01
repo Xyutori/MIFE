@@ -16,7 +16,7 @@ import { cache, db } from "./services";
 
 export const SCRAPE_SETTING_KEYS = [
 	"timeZone",
-	"dailyTime",
+	"dailyTimes",
 	"batchSize",
 	"batchConcurrency",
 	"incrementalMaxPages",
@@ -28,7 +28,8 @@ export type ScrapeSettingSource = "db" | "default";
 
 export interface ScrapeSettings {
 	timeZone: string;
-	dailyTime: string;
+	/** Daftar jam scrape harian "HH:MM", terurut, unik (bisa >1 jadwal). */
+	dailyTimes: string[];
 	batchSize: number;
 	batchConcurrency: number;
 	incrementalMaxPages: number;
@@ -41,11 +42,17 @@ export interface ScrapeSettingsResult {
 
 const DB_KEY: Record<ScrapeSettingKey, string> = {
 	timeZone: "scrape.time_zone",
-	dailyTime: "scrape.daily_time",
+	dailyTimes: "scrape.daily_times",
 	batchSize: "scrape.batch_size",
 	batchConcurrency: "scrape.batch_concurrency",
 	incrementalMaxPages: "scrape.incremental_max_pages",
 };
+
+/** Baris legacy satu-jadwal; dibaca sebagai fallback bila daily_times absen. */
+const LEGACY_DB_KEY_DAILY_TIME = "scrape.daily_time";
+
+/** Batas jumlah slot jadwal harian (cukup untuk pola per jam). */
+export const MAX_DAILY_SLOTS = 12;
 
 const CACHE_KEY = "scrape-settings";
 const CACHE_TTL_SECONDS = 60;
@@ -84,11 +91,32 @@ function parsePositiveInt(value: unknown): number | null {
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+/** Normalisasi daftar slot "HH:MM": trim, valid, unik, terurut, dibatasi. */
+export function normalizeDailyTimes(value: unknown): string[] | null {
+	if (typeof value === "string") {
+		// Baris DB lama bisa berupa JSON array tersimpan sebagai string.
+		try {
+			return normalizeDailyTimes(JSON.parse(value) as unknown);
+		} catch {
+			return isValidDailyTime(value) ? [value.trim()] : null;
+		}
+	}
+	if (!Array.isArray(value)) return null;
+	const cleaned: string[] = [];
+	for (const entry of value) {
+		if (typeof entry !== "string" || !isValidDailyTime(entry)) return null;
+		const slot = entry.trim();
+		if (!cleaned.includes(slot)) cleaned.push(slot);
+	}
+	if (cleaned.length === 0 || cleaned.length > MAX_DAILY_SLOTS) return null;
+	return cleaned.sort();
+}
+
 /** Default bawaan kode; dipakai bila baris DB absen/invalid. */
 export function envScrapeDefaults(): ScrapeSettings {
 	return {
 		timeZone: "Asia/Jakarta",
-		dailyTime: "20:00",
+		dailyTimes: ["20:00"],
 		batchSize: 20,
 		batchConcurrency: 3,
 		incrementalMaxPages: 5,
@@ -98,10 +126,13 @@ export function envScrapeDefaults(): ScrapeSettings {
 /** Baca langsung dari DB (tanpa cache) — dipakai scheduler tiap tick. */
 export async function getScrapeSettingsFresh(): Promise<ScrapeSettingsResult> {
 	const fallback = envScrapeDefaults();
-	const values: ScrapeSettings = { ...fallback };
+	const values: ScrapeSettings = {
+		...fallback,
+		dailyTimes: [...fallback.dailyTimes],
+	};
 	const sources: Record<ScrapeSettingKey, ScrapeSettingSource> = {
 		timeZone: "default",
-		dailyTime: "default",
+		dailyTimes: "default",
 		batchSize: "default",
 		batchConcurrency: "default",
 		incrementalMaxPages: "default",
@@ -120,10 +151,17 @@ export async function getScrapeSettingsFresh(): Promise<ScrapeSettingsResult> {
 		values.timeZone = timeZone.trim();
 		sources.timeZone = "db";
 	}
-	const dailyTime = byKey.get(DB_KEY.dailyTime);
-	if (dailyTime !== undefined && isValidDailyTime(dailyTime)) {
-		values.dailyTime = dailyTime.trim();
-		sources.dailyTime = "db";
+	const dailyTimes = normalizeDailyTimes(byKey.get(DB_KEY.dailyTimes));
+	if (dailyTimes) {
+		values.dailyTimes = dailyTimes;
+		sources.dailyTimes = "db";
+	} else {
+		// Migrasi lunak baris legacy satu-jadwal ("20:00") ke daftar.
+		const legacy = byKey.get(LEGACY_DB_KEY_DAILY_TIME);
+		if (legacy !== undefined && isValidDailyTime(legacy)) {
+			values.dailyTimes = [legacy.trim()];
+			sources.dailyTimes = "db";
+		}
 	}
 	const numbers: Array<{
 		key: "batchSize" | "batchConcurrency" | "incrementalMaxPages";
@@ -157,7 +195,7 @@ export async function invalidateScrapeSettingsCache(): Promise<void> {
 const FIELD_ERRORS: Record<ScrapeSettingKey, string> = {
 	timeZone:
 		"timeZone harus nama zona waktu IANA yang valid (mis. Asia/Jakarta).",
-	dailyTime: "dailyTime harus format HH:MM 24 jam (mis. 20:00).",
+	dailyTimes: `dailyTimes harus array 1–${MAX_DAILY_SLOTS} string format HH:MM 24 jam (mis. ["07:00", "19:00"]).`,
 	batchSize: "batchSize harus bilangan bulat 1–100.",
 	batchConcurrency: "batchConcurrency harus bilangan bulat 1–8.",
 	incrementalMaxPages: "incrementalMaxPages harus bilangan bulat 2–20.",
@@ -172,10 +210,13 @@ function validateSettingValue(
 			return { ok: false, error: FIELD_ERRORS.timeZone };
 		return { ok: true, stored: (value as string).trim() };
 	}
-	if (key === "dailyTime") {
-		if (!isValidDailyTime(value))
-			return { ok: false, error: FIELD_ERRORS.dailyTime };
-		return { ok: true, stored: (value as string).trim() };
+	if (key === "dailyTimes") {
+		// Terima string tunggal ("20:00") sebagai alias satu slot.
+		const normalized = normalizeDailyTimes(
+			typeof value === "string" ? [value] : value,
+		);
+		if (!normalized) return { ok: false, error: FIELD_ERRORS.dailyTimes };
+		return { ok: true, stored: JSON.stringify(normalized) };
 	}
 	const parsed = parsePositiveInt(value);
 	if (parsed === null) return { ok: false, error: FIELD_ERRORS[key] };

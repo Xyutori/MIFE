@@ -78,16 +78,16 @@ Legenda auth:
 
 ## `routes/scrapes.ts` — kontrol scrape (admin, 10 endpoint)
 
-| Method | Path                                 | Auth  | File:Line      | Deskripsi                                                                          |
-| ------ | ------------------------------------ | ----- | -------------- | ---------------------------------------------------------------------------------- |
-| GET    | `/api/admin/scrapes`                 | admin | scrapes.ts:108 | Daftar run (`?workspace&status&kind&limit`).                                       |
-| POST   | `/api/admin/scrapes`                 | admin | scrapes.ts:151 | Mulai scrape (anime vs metadata komik; default workspace `comic`).                 |
-| POST   | `/api/admin/scrapes/images-download` | admin | scrapes.ts:175 | Mulai image-download run (cakupan seri/chapter/source).                            |
-| GET    | `/api/admin/scrapes/:id`             | admin | scrapes.ts:201 | Detail run + 100 event terakhir.                                                   |
-| POST   | `/api/admin/scrapes/:id/pause`       | admin | scrapes.ts:226 | Jeda run (queued/running → paused).                                                |
-| POST   | `/api/admin/scrapes/:id/resume`      | admin | scrapes.ts:243 | Lanjutkan run (routing by kind: images → images handler).                          |
-| POST   | `/api/admin/scrapes/:id/cancel`      | admin | scrapes.ts:275 | Batalkan run.                                                                      |
-| POST   | `/api/admin/scrapes/:id/retry`       | admin | scrapes.ts:294 | Coba ulang run (buat run baru; routing by kind).                                   |
+| Method | Path                                 | Auth  | File:Line      | Deskripsi                                                                         |
+| ------ | ------------------------------------ | ----- | -------------- | --------------------------------------------------------------------------------- |
+| GET    | `/api/admin/scrapes`                 | admin | scrapes.ts:108 | Daftar run (`?workspace&status&kind&limit`).                                      |
+| POST   | `/api/admin/scrapes`                 | admin | scrapes.ts:151 | Mulai scrape (anime vs metadata komik; default workspace `comic`).                |
+| POST   | `/api/admin/scrapes/images-download` | admin | scrapes.ts:175 | Mulai image-download run (cakupan seri/chapter/source).                           |
+| GET    | `/api/admin/scrapes/:id`             | admin | scrapes.ts:201 | Detail run + 100 event terakhir.                                                  |
+| POST   | `/api/admin/scrapes/:id/pause`       | admin | scrapes.ts:226 | Jeda run (queued/running → paused).                                               |
+| POST   | `/api/admin/scrapes/:id/resume`      | admin | scrapes.ts:243 | Lanjutkan run (routing by kind: images → images handler).                         |
+| POST   | `/api/admin/scrapes/:id/cancel`      | admin | scrapes.ts:275 | Batalkan run.                                                                     |
+| POST   | `/api/admin/scrapes/:id/retry`       | admin | scrapes.ts:294 | Coba ulang run (buat run baru; routing by kind).                                  |
 | GET    | `/api/admin/scrape-settings`         | admin | scrapes.ts     | Nilai efektif 5 pengaturan scraper + sumber per key (`db`/`env`) + daftar sumber. |
 | PUT    | `/api/admin/scrape-settings`         | admin | scrapes.ts     | Simpan parsial 5 pengaturan (validasi ketat, 400 bila invalid/unknown key).       |
 

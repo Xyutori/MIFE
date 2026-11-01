@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Crown, Search } from "lucide-svelte";
-import { page } from "$app/state";
 import { cn } from "#lib/utils.js";
+import { page } from "$app/state";
 import UserMenu from "../../../components/UserMenu.svelte";
 
 interface Props {

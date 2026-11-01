@@ -81,6 +81,7 @@ export const animeCardColumns = {
 	isVisible: animeSeries.isVisible,
 	latestEpisodeNumber: animeSeries.latestEpisodeNumber,
 	latestEpisodeAt: animeSeries.latestEpisodeAt,
+	localViewCount: animeSeries.localViewCount,
 	createdAt: animeSeries.createdAt,
 	updatedAt: animeSeries.updatedAt,
 } as const;
@@ -290,6 +291,7 @@ const episodeCardColumns = {
 	numberText: animeEpisodes.numberText,
 	title: animeEpisodes.title,
 	releasedAt: animeEpisodes.releasedAt,
+	localViewCount: animeEpisodes.localViewCount,
 } as const;
 
 export async function getEpisodePage(
@@ -377,7 +379,7 @@ export async function getAnimeDetail(db: Database, animeId: string) {
 			.innerJoin(sources, eq(animeSources.sourceId, sources.id))
 			.where(eq(animeSources.animeId, animeId)),
 		thumbnailsFor(db, [animeId]),
-		getEpisodePage(db, animeId, 1, 40),
+		getEpisodePage(db, animeId, 1, 10),
 	]);
 	return {
 		...animeResponse(rows[0]),
@@ -449,6 +451,7 @@ export type EpisodeMedia = {
 		animeId: string;
 		numberText: string;
 		title: string | null;
+		localViewCount: number;
 	};
 	nextEpisodeId: string | null;
 	sources: Array<Record<string, unknown>>;
@@ -472,6 +475,7 @@ export async function getEpisodeMedia(
 			animeId: animeEpisodes.animeId,
 			numberText: animeEpisodes.numberText,
 			title: animeEpisodes.title,
+			localViewCount: animeEpisodes.localViewCount,
 			seriesId: animeSeries.id,
 			seriesTitle: animeSeries.title,
 		})
@@ -618,6 +622,7 @@ export async function getEpisodeMedia(
 			animeId: head.animeId,
 			numberText: head.numberText,
 			title: head.title,
+			localViewCount: head.localViewCount ?? 0,
 		},
 		nextEpisodeId: await findNextEpisodeId(db, head.seriesId, episodeId),
 		sources: filtered.flatMap((row) =>

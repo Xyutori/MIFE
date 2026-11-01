@@ -1,18 +1,18 @@
 <script lang="ts">
-	export interface ScrapeSourceItem {
-		key: string;
-		name: string;
-		enabled: boolean;
-		successLabel: string;
-		fullLabel: string;
-	}
+export interface ScrapeSourceItem {
+	key: string;
+	name: string;
+	enabled: boolean;
+	successLabel: string;
+	fullLabel: string;
+}
 
-	interface Props {
-		sources: ScrapeSourceItem[];
-		emptyLabel?: string;
-	}
+interface Props {
+	sources: ScrapeSourceItem[];
+	emptyLabel?: string;
+}
 
-	let { sources, emptyLabel = "Belum ada data sumber." }: Props = $props();
+let { sources, emptyLabel = "Belum ada data sumber." }: Props = $props();
 </script>
 
 <section class="rounded-3xl border bg-card p-4 sm:p-5" aria-label="Status sumber">

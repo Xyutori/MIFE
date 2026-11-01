@@ -1,8 +1,8 @@
 <script lang="ts">
-	import LoginCta from "#lib/components/profile/LoginCta.svelte";
-	import type { PageProps } from './$types';
-	let { data }: PageProps = $props();
+import LoginCta from "#lib/components/profile/LoginCta.svelte";
+import type { PageProps } from "./$types";
 
+let { data }: PageProps = $props();
 </script>
 
 	{#if data.user}
