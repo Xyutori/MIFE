@@ -1,0 +1,9 @@
+# cloudflared lokal (bukan dashboard). Kredensial di-mount dari ~/.cloudflared
+# (file <tunnel-id>.json — JANGAN commit, berisi secret).
+tunnel: 123f6502-b7ba-40d6-9588-b89a400cb0ef
+credentials-file: /etc/cloudflared/creds.json
+
+ingress:
+  - hostname: mife.feryn.xyz
+    service: http://web:80
+  - service: http_status:404

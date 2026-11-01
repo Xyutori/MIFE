@@ -46,8 +46,21 @@ Google Console wajib: origin `https://mife.feryn.xyz` + redirect
 docker compose build [server|web]
 docker compose up -d
 
-# Hanya tunnel (butuh CLOUDFLARE_TUNNEL_TOKEN di .env)
+# Hanya tunnel (butuh login cloudflared + route DNS sekali saja, lihat Tunnel di bawah)
 docker compose up -d tunnel
+
+## Tunnel (dikelola via CLI, tanpa dashboard)
+
+```bash
+cloudflared tunnel login                             # sekali per mesin (browser)
+cloudflared tunnel create mife-app                   # sekali saja → ~/.cloudflared/<id>.json
+chmod 644 ~/.cloudflared/<id>.json                   # agar terbaca container
+cloudflared tunnel route dns mife-app mife.feryn.xyz # CNAME → tunnel (sekali saja)
+```
+
+`deploy/cloudflared-config.yml` memetakan `mife.feryn.xyz → http://web:80`.
+`CLOUDFLARE_TUNNEL_TOKEN` di `.env` sudah tidak dipakai. Tunnel dashboard lama
+(`MIFE`/`MIFE-2`) boleh dihapus bila tidak dipakai.
 ```
 
 Migrasi DB jalan otomatis tiap boot `server` (idempoten via journal drizzle).
