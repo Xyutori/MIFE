@@ -1,28 +1,29 @@
 {
-  "name": "@SyMi/db",
-  "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./*": "./src/*.ts"
-  },
-  "scripts": {
-    "check-types": "tsc --noEmit",
-    "db:push": "drizzle-kit push",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate:deploy": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
-    "db:migrate": "drizzle-kit migrate"
-  },
-  "dependencies": {
-    "drizzle-orm": "catalog:",
-    "pg": "^8.23.0",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@SyMi/config": "workspace:*",
-    "@types/pg": "^8.23.1",
-    "drizzle-kit": "1.0.0-rc.5",
-    "typescript": "catalog:",
-    "varlock": "catalog:"
-  }
+	"name": "@SyMi/db",
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./*": "./src/*.ts"
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit",
+		"db:push": "drizzle-kit push",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate:deploy": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio",
+		"migrate:xymi": "bun ./src/migrate-from-xymi.ts",
+		"db:migrate": "drizzle-kit migrate"
+	},
+	"dependencies": {
+		"drizzle-orm": "catalog:",
+		"pg": "^8.23.0",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@SyMi/config": "workspace:*",
+		"@types/pg": "^8.23.1",
+		"drizzle-kit": "1.0.0-rc.5",
+		"typescript": "catalog:",
+		"varlock": "catalog:"
+	}
 }

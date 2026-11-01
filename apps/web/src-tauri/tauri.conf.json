@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "SyMi",
+  "productName": "MIFE",
   "version": "0.1.0",
   "identifier": "com.tauri.dev",
   "build": {
     "frontendDist": "../build",
-    "devUrl": "http://localhost:5173",
+    "devUrl": "http://localhost:4001",
     "beforeDevCommand": "bun run dev",
     "beforeBuildCommand": "bun run build"
   },
   "app": {
     "windows": [
       {
-        "title": "SyMi",
+        "title": "MIFE",
         "width": 800,
         "height": 600,
         "resizable": true,

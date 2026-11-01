@@ -1,0 +1,176 @@
+{
+	"type": "diff",
+	"version": "9",
+	"dialect": "postgres",
+	"id": "d170064d-4ed1-4c96-813d-5ebf4f2e2cf5",
+	"prevIds": ["67263d9f-932d-4a79-9900-79d3eb9afb04"],
+	"footprints": [
+		{
+			"statementType": "add_column",
+			"statementTarget": ["column", "public", "user", "header_image"],
+			"writes": [
+				"s|col|public.user.header_image",
+				"n|col|public.user.header_image",
+				"e|col|public.user.header_image"
+			],
+			"reads": ["n|tbl|public.user", "n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": ["column", "public", "user", "username"],
+			"writes": [
+				"s|col|public.user.username",
+				"n|col|public.user.username",
+				"e|col|public.user.username"
+			],
+			"reads": ["n|tbl|public.user", "n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": ["column", "public", "user", "phone"],
+			"writes": [
+				"s|col|public.user.phone",
+				"n|col|public.user.phone",
+				"e|col|public.user.phone"
+			],
+			"reads": ["n|tbl|public.user", "n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": ["column", "public", "user", "banned"],
+			"writes": [
+				"s|col|public.user.banned",
+				"n|col|public.user.banned",
+				"e|col|public.user.banned"
+			],
+			"reads": ["n|tbl|public.user", "n|sch|public"]
+		},
+		{
+			"statementType": "add_column",
+			"statementTarget": ["column", "public", "user", "ban_reason"],
+			"writes": [
+				"s|col|public.user.ban_reason",
+				"n|col|public.user.ban_reason",
+				"e|col|public.user.ban_reason"
+			],
+			"reads": ["n|tbl|public.user", "n|sch|public"]
+		},
+		{
+			"statementType": "create_index",
+			"statementTarget": ["index", "public", "user", "user_username_ci_unique"],
+			"writes": [
+				"s|idx|public.user_username_ci_unique",
+				"n|idx|public.user_username_ci_unique",
+				"e|idx|public.user_username_ci_unique",
+				"n|rel|public.user_username_ci_unique"
+			],
+			"reads": ["n|tbl|public.user", "n|sch|public"]
+		}
+	],
+	"deltas": [
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "user",
+				"name": "header_image",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "user",
+				"name": "username",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "user",
+				"name": "phone",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "user",
+				"name": "banned",
+				"type": "boolean",
+				"typeSchema": null,
+				"notNull": true,
+				"dimensions": 0,
+				"default": "false",
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "user",
+				"name": "ban_reason",
+				"type": "text",
+				"typeSchema": null,
+				"notNull": false,
+				"dimensions": 0,
+				"default": null,
+				"generated": null,
+				"identity": null,
+				"entityType": "columns"
+			}
+		},
+		{
+			"op": "create",
+			"row": {
+				"schema": "public",
+				"table": "user",
+				"name": "user_username_ci_unique",
+				"nameExplicit": true,
+				"columns": [
+					{
+						"value": "lower(\"username\")",
+						"isExpression": true,
+						"asc": true,
+						"nullsFirst": false,
+						"opclass": null
+					}
+				],
+				"isUnique": true,
+				"where": "\"username\" is not null",
+				"with": "",
+				"method": "btree",
+				"concurrently": false,
+				"entityType": "indexes"
+			}
+		}
+	]
+}

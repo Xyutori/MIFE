@@ -1,112 +1,90 @@
-# SyMi
+# MIFE — Comic & Anime Reader Platform
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines SvelteKit, Elysia, and more.
+![GitHub release](https://img.shields.io/github/v/release/Xyutori/MIFE?label=version)
+![Bun](https://img.shields.io/badge/runtime-Bun_1.4-black?logo=bun)
+![Svelte](https://img.shields.io/badge/frontend-SvelteKit_3-orange?logo=svelte)
+![Elysia](https://img.shields.io/badge/backend-Elysia_1.4-purple)
+![PostgreSQL](https://img.shields.io/badge/database-PostgreSQL_16-blue?logo=postgresql)
+![Drizzle](https://img.shields.io/badge/orm-Drizzle-green)
+![Better Auth](https://img.shields.io/badge/auth-Better_Auth-social_only-red)
+![Tauri](https://img.shields.io/badge/desktop-Tauri_2-teal?logo=tauri)
+![check-types](https://img.shields.io/badge/check--types-passing-brightgreen)
+![platform](https://img.shields.io/badge/platform-web_%7C_desktop-lightgrey)
 
-## Features
+Platform baca komik & anime dengan scraper otomatis, katalog offline-friendly, dan aplikasi desktop — satu codebase untuk web dan desktop (Tauri).
 
-- **TypeScript** - For type safety and improved developer experience
-- **SvelteKit** - Web framework for building Svelte apps
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Elysia** - Type-safe, high-performance framework
-- **Bun** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **Nx** - Smart monorepo task orchestration and caching
-- **Tauri** - Build native desktop applications
+> **v0.8.4** — migrasi penuh ke social-only auth (Google/GitHub), paritas visual XyMI, offline reader, admin console RBAC-gated.
 
-## Getting Started
+## ✨ Fitur
 
-First, install the dependencies:
+- 📚 **Katalog komik & anime** — browse, search full-text PostgreSQL (`pg_trgm`/`tsvector`), filter genre multi-select, hero editorial
+- 🕷️ **Scraper otomatis** — adapter multi-sumber + retry/backoff, scheduler harian, worker recovery, varian gambar WebP ke S3/MinIO
+- 📖 **Reader imersif** — fullscreen tanpa chrome, chapter nav sheet, posisi baca tersimpan, auto-scroll
+- 📴 **Offline** — App-shell PWA precache + cache respons 45 dtk (unduh chapter manual dihapus di versi ini)
+- 🔐 **Social-only auth** — Google & GitHub OAuth (Better Auth), account linking, banned-check, bootstrap admin
+- 🛡️ **Admin console** — 404 untuk non-admin; scrape runs, integritas media, users, roles/permissions, arsip export/import
+- 🖥️ **Desktop (Tauri)** — satu sumber kode dengan web; dev di `http://localhost:4001`
+
+## 🧱 Tech Stack
+
+| Lapisan   | Teknologi |
+|-----------|-----------|
+| Monorepo  | Bun workspaces + Nx |
+| Web       | SvelteKit 3 + Svelte 5 runes + Tailwind CSS 4 (CSS-first) |
+| Backend   | Elysia 1.4 di Bun (`/api/*`) |
+| Database  | PostgreSQL 16 + Drizzle ORM (`pgTable`, 35+ tabel, FTS) |
+| Storage   | S3-compatible (MinIO) untuk varian gambar |
+| Auth      | Better Auth 1.7 — social-only (Google, GitHub) |
+| Desktop   | Tauri 2 (frontend = build web statis) |
+| Env       | Varlock codegen (`PORT` web `4001`, server `4000`) |
+
+## 🚀 Quickstart
 
 ```bash
+# 1. Install
 bun install
-```
 
-## Database Setup
+# 2. Infra lokal (Postgres :5432, MinIO :9000 — sesuaikan kredensial di .env)
+docker compose up -d   # atau pakai service yang sudah jalan
 
-This project uses PostgreSQL with Drizzle ORM.
+# 3. Env (contoh)
+cp apps/server/.env.example apps/server/.env  # bila tersedia, lalu isi:
+# PORT=4000, DATABASE_URL=..., S3_ENDPOINT=http://localhost:9000,
+# S3_ACCESS_KEY=..., S3_SECRET_KEY=..., S3_BUCKET=...,
+# GOOGLE_CLIENT_ID/SECRET, GITHUB_CLIENT_ID/SECRET (opsional),
+# AUTH_BOOTSTRAP_ADMIN_EMAIL=you@example.com
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
-
-```bash
+# 4. Migrasi + seed
 bun run db:push
+bun run env:generate
+
+# 5. Jalan!
+bun run dev:server   # → http://localhost:4000
+bun run dev:web      # → http://localhost:4001
 ```
 
-Then, run the development server:
+Login pertama dengan email bootstrap menjadi **admin** otomatis; area `/admin` melempar **404** bagi non-admin.
 
-```bash
-bun run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
-
-## Environment Configuration
-
-Each app owns its environment schema in `.env.schema`. Varlock generates `src/env.ts` during installation; run `bun run env:generate` after changing a schema. Commit schemas, and keep secrets in ignored env files or your deployment platform.
-
-Import the generated `ENV` accessor in application code. Shared database and auth packages receive configuration or initialized clients from the application. See [Varlock's monorepo guide](https://varlock.dev/guides/monorepos/).
-
-Bun's automatic env loading is disabled in `bunfig.toml`; the framework integration or server bootstrap loads Varlock. Node deployments must include Varlock and its dependencies alongside the app schema.
-
-Run standalone Node/Bun tools that use Varlock from the owning app directory so they load that app's schema and env files. `env:generate` only generates TypeScript files; it does not initialize environment values in a subsequent command.
-
-## Deployment
-
-### Docker Compose
-
-- Target: server
-- Config: `docker-compose.yml` (app Dockerfiles live in `apps/*/Dockerfile`)
-- Build images: bun run docker:build
-- Start: bun run docker:up
-- Logs: bun run docker:logs
-- Stop: bun run docker:down
-
-Environment variables are read from each app's `.env` file (baked into web builds for public variables) and overridden in `docker-compose.yml` for container networking.
-
-For more details, see the guide on [Deploying with Docker Compose](https://www.better-t-stack.dev/docs/guides/docker).
-
-## Git Hooks and Formatting
-
-- Run checks: `bun run check`
-
-## Project Structure
+## 📁 Struktur
 
 ```
-SyMi/
-├── apps/
-│   ├── web/         # Frontend application (SvelteKit)
-│   └── server/      # Backend API (Elysia)
-├── packages/
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+apps/server/src/{routes,sources,jobs,media,storage,cache,rbac,auth,anime}.ts
+apps/web/src/{routes,lib/{api,components,offline}}   # SvelteKit SPA + PWA
+packages/db/src/schema/{catalog,anime,bookmarks,rbac,preferences,auth}.ts
+docs/references/shinigami/    # referensi HTML + backup desain lama (svelte/)
 ```
 
-## Available Scripts
+## 🔌 API (ringkas)
 
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run db:push`: Push schema changes to database
-- `bun run db:generate`: Generate database client/types
-- `bun run db:migrate`: Run database migrations
-- `bun run db:studio`: Open database studio UI
-- `bun run check`: Run Biome formatting and linting
-- `cd apps/web && bun run desktop:dev`: Start Tauri desktop app in development
-- `cd apps/web && bun run desktop:build`: Build Tauri desktop app
-- Note: Desktop builds package static web assets. SvelteKit needs a static/export build configuration before desktop packaging will work.
-- `bun run docker:build`: Build the Docker Compose images
-- `bun run docker:up`: Build and start the Docker Compose stack
-- `bun run docker:logs`: Tail logs from the Docker Compose stack
-- `bun run docker:down`: Stop the Docker Compose stack
+- `GET /api/v1/library?genre=a,b&...` — katalog (genre multi, koma-dipisah)
+- `GET /api/v1/genres?workspace=mife|anime` — daftar genre untuk saran combobox
+- `GET /api/v1/library/hero`, `/library/:id`, `/chapters/:id/pages`
+- `GET /api/auth/providers` — provider OAuth aktif
+- `GET/PATCH /api/auth/profile` — profil user
+- `GET /api/admin/scrapes…`, `/api/admin/archive/export|import` — admin (RBAC)
 
-## Better Auth Schema Generation
+## 📝 Catatan
 
-After changing auth plugins or schema options, run `bun run auth:generate` from the project root. The script runs the Better Auth CLI through `varlock run` from the owning app directory, loading the auth instance from `src/services.ts`. Review the schema changes, then use your ORM's migration workflow to apply them.
+- Tanpa kredensial OAuth, login sosial tidak aktif — daftar provider mengikuti env.
+- `bun run check-types` hijau (4 proyek). Build produksi tidak dijalankan di dev loop ini.
+- Migrasi data lama: `bun run migrate:xymi` di `packages/db` (`XYMI_SQLITE_PATH=...`).

@@ -1,4 +1,3 @@
-import { redirect } from "@sveltejs/kit";
 import type { BetterFetchOption } from "better-auth/client";
 
 import { authClient } from "#lib/auth-client.ts";
@@ -9,11 +8,11 @@ import type { PageLoad } from "./$types";
 export const ssr = false;
 
 export const load = (async ({ fetch }) => {
-  const fetchOptions = {
-    customFetchImpl: fetch,
-    throw: true,
-  } satisfies BetterFetchOption;
-  const session = await authClient.getSession({ fetchOptions });
-  if (!session) redirect(307, "/login");
-  return { user: session.user };
+	const fetchOptions = {
+		customFetchImpl: fetch,
+		throw: true,
+	} satisfies BetterFetchOption;
+	const session = await authClient.getSession({ fetchOptions });
+	if (!session) return { user: null };
+	return { user: session.user };
 }) satisfies PageLoad;
