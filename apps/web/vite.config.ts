@@ -63,7 +63,22 @@ export default defineConfig(({ mode }) => {
 				},
 			}),
 		],
-		server: { port },
+		server: {
+			port,
+			// Listen on all interfaces so a physical Android device/emulator can
+			// reach the dev server over LAN. Keep the port from env (PORT).
+			// To point Tauri at this machine from a device, either set
+			// TAURI_DEV_HOST=<lan-ip> before `tauri android dev`, or run
+			// `tauri android dev --host` so the CLI picks the LAN IP as devUrl.
+			host: "0.0.0.0",
+			hmr: {
+				// HMR client defaults to window.location.hostname, which works
+				// once devUrl resolves to this host. Override via env when needed,
+				// e.g. HMR_HOST=<lan-ip> vite dev --hmr-host.
+				host: env.HMR_HOST ?? process.env.HMR_HOST ?? undefined,
+				clientPort: port,
+			},
+		},
 		preview: { port },
 	};
 });

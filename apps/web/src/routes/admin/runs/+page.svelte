@@ -31,19 +31,17 @@ const tabs: Array<{ id: Tab; label: string }> = [
 {#if tab === "anime"}
 	<div role="tabpanel" id="panel-anime" aria-labelledby="tab-anime">
 		<ScrapeRunsPanel />
-		<div class="mt-5">
-			<ScrapeSchedulePanel />
-		</div>
 	</div>
 {:else if tab === "comic"}
 	<div role="tabpanel" id="panel-comic" aria-labelledby="tab-comic">
 		<ComicScrapePanel />
-		<div class="mt-5">
-			<ScrapeSchedulePanel />
-		</div>
 	</div>
 {:else}
 	<div role="tabpanel" id="panel-super" aria-labelledby="tab-super">
 		<SuperKomikJobsPanel />
 	</div>
 {/if}
+
+<div class="mt-5">
+	<ScrapeSchedulePanel />
+</div>

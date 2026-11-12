@@ -10,7 +10,9 @@ type SettingSource = "db" | "default";
 type SettingsPayload = {
 	values: {
 		timeZone: string;
-		dailyTimes: string[];
+		dailyTimes?: string[];
+		/** Bentuk legacy server lama (satu slot string). */
+		dailyTime?: string;
 		batchSize: number;
 		batchConcurrency: number;
 		incrementalMaxPages: number;
@@ -46,6 +48,16 @@ function sortedSlots(list: string[]): string[] {
 	return [...list].sort();
 }
 
+// Toleran skew deploy: server lama mengirim `dailyTime` string tunggal
+// (atau tanpa keduanya) — jangan crash, pakai default.
+function readSlots(values: SettingsPayload["values"] | null | undefined): string[] {
+	if (Array.isArray(values?.dailyTimes) && values.dailyTimes.length > 0)
+		return [...values.dailyTimes];
+	if (typeof values?.dailyTime === "string" && values.dailyTime.trim())
+		return [values.dailyTime.trim()];
+	return ["20:00"];
+}
+
 function addSlot() {
 	const cleaned = newSlot.trim();
 	if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(cleaned)) {
@@ -74,7 +86,7 @@ async function refresh(signal?: AbortSignal) {
 	);
 	values = payload.values;
 	keySources = payload.sources;
-	slots = [...payload.values.dailyTimes];
+	slots = readSlots(payload.values);
 	newSlot = "";
 	drafts = {
 		timeZone: payload.values.timeZone,
@@ -98,7 +110,7 @@ async function saveSettings(event: SubmitEvent) {
 			body[key] = key === "timeZone" ? draft.trim() : Number(draft);
 		}
 		if (
-			sortedSlots(slots).join(",") !== sortedSlots(values.dailyTimes).join(",")
+			sortedSlots(slots).join(",") !== sortedSlots(readSlots(values)).join(",")
 		) {
 			if (slots.length === 0) {
 				error = "Minimal satu jadwal jam harus ada.";
@@ -117,7 +129,7 @@ async function saveSettings(event: SubmitEvent) {
 		);
 		values = payload.values;
 		keySources = payload.sources;
-		slots = [...payload.values.dailyTimes];
+		slots = readSlots(payload.values);
 		newSlot = "";
 		drafts = {
 			timeZone: payload.values.timeZone,

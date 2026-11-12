@@ -18,11 +18,15 @@
 		"tauri": "tauri",
 		"desktop:dev": "tauri dev",
 		"desktop:build": "tauri build",
+		"android:init": "tauri android init",
+		"android:dev": "tauri android dev",
+		"android:build": "tauri android build",
 		"env:generate": "varlock codegen"
 	},
 	"dependencies": {
 		"@floating-ui/dom": "^1.8.0",
 		"@tanstack/svelte-form": "^1.33.5",
+		"@tauri-apps/api": "^2",
 		"@tiptap/core": "^3.32.2",
 		"@tiptap/extension-bubble-menu": "^3.32.2",
 		"@tiptap/extension-code-block-lowlight": "^3.32.2",

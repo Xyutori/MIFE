@@ -61,7 +61,7 @@ onMount(() => {
 			? "min-h-0 flex-1 overflow-x-clip overflow-y-auto"
 			: isReadRoute
 				? "min-h-0 overflow-x-clip overflow-y-auto"
-				: "min-h-0 overflow-x-clip overflow-y-auto pb-24 lg:pb-0"}
+				: "min-h-0 overflow-x-clip overflow-y-auto pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0"}
 	>
 		{#if oauthError}
 			<div class="mx-auto w-full max-w-5xl px-4 pt-4">

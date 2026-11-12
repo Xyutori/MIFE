@@ -580,6 +580,7 @@ select {
 }
 
 .reader-icon-action:hover,
+.reader-icon-action:active,
 .reader-icon-action.is-active {
 	background: rgb(255 255 255 / 12%);
 	color: #fafafa;
@@ -688,6 +689,7 @@ select {
 	border: 1px solid rgb(255 255 255 / 9%);
 	border-radius: 1.65rem 1.65rem 1.1rem 1.1rem;
 	padding: 1.25rem;
+	padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
 	background: #191b22;
 	box-shadow: 0 24px 70px rgb(0 0 0 / 45%);
 }
@@ -810,7 +812,8 @@ select {
 	box-shadow: 0 8px 25px rgb(0 0 0 / 12%);
 }
 
-.catalog-card:hover {
+.catalog-card:hover,
+.catalog-card:active {
 	box-shadow: 0 16px 36px rgb(0 0 0 / 25%);
 }
 
@@ -912,7 +915,8 @@ select {
 		filter 160ms ease;
 }
 
-.detail-actions a:hover {
+.detail-actions a:hover,
+.detail-actions a:active {
 	transform: translateY(-1px);
 }
 
@@ -975,7 +979,8 @@ select {
 	background: rgb(24 27 38 / 82%);
 }
 
-.chapter-row:hover {
+.chapter-row:hover,
+.chapter-row:active {
 	border-color: rgb(255 255 255 / 25%);
 	background: #222736;
 }
@@ -1047,10 +1052,6 @@ select {
 }
 
 @media (max-width: 520px) {
-	body[data-area="public"] {
-		padding-bottom: calc(5.1rem + env(safe-area-inset-bottom));
-	}
-
 	.site-nav {
 		position: fixed;
 		top: auto;
@@ -1301,7 +1302,8 @@ select {
 		transform 150ms ease;
 }
 
-.detail-icon-action:hover {
+.detail-icon-action:hover,
+.detail-icon-action:active {
 	transform: translateY(-1px);
 	background: var(--accent);
 }
@@ -1451,7 +1453,8 @@ select {
 	box-shadow: 0 8px 25px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
-.detail-primary-action:hover {
+.detail-primary-action:hover,
+.detail-primary-action:active {
 	background: var(--primary);
 	filter: brightness(1.08);
 }
@@ -1467,7 +1470,8 @@ select {
 	outline-offset: 2px;
 }
 
-.detail-secondary-action:hover {
+.detail-secondary-action:hover,
+.detail-secondary-action:active {
 	background: var(--accent);
 }
 
@@ -1520,7 +1524,8 @@ select {
 	transition: transform 180ms ease;
 }
 
-.chapter-card:hover .chapter-thumb img {
+.chapter-card:hover .chapter-thumb img,
+.chapter-card:active .chapter-thumb img {
 	transform: scale(1.035);
 }
 
@@ -1671,7 +1676,8 @@ select {
 	-webkit-line-clamp: 2;
 }
 
-.chapter-card:hover .chapter-card-title {
+.chapter-card:hover .chapter-card-title,
+.chapter-card:active .chapter-card-title {
 	color: var(--primary);
 }
 
@@ -1696,7 +1702,8 @@ select {
 		border-color 150ms ease;
 }
 
-.detail-sort-toggle:hover {
+.detail-sort-toggle:hover,
+.detail-sort-toggle:active {
 	border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
 	background: var(--accent);
 }
@@ -2051,7 +2058,8 @@ select {
 		transform 150ms ease;
 }
 
-.featured-hero-link:hover {
+.featured-hero-link:hover,
+.featured-hero-link:active {
 	filter: brightness(1.08);
 	transform: translateY(-1px);
 }
@@ -2073,8 +2081,8 @@ select {
 
 .featured-hero-controls > button {
 	display: grid;
-	width: 2.5rem;
-	height: 2.5rem;
+	width: 2.75rem;
+	height: 2.75rem;
 	place-items: center;
 	border: 1px solid rgb(255 255 255 / 16%);
 	border-radius: 50%;
@@ -2318,7 +2326,8 @@ select {
 	transition: filter 150ms ease;
 }
 
-.detail-synopsis-toggle:hover {
+.detail-synopsis-toggle:hover,
+.detail-synopsis-toggle:active {
 	color: var(--primary);
 	filter: brightness(1.15);
 }
@@ -2700,7 +2709,8 @@ select {
 		color 180ms ease;
 }
 
-.admin-mobile-link:hover {
+.admin-mobile-link:hover,
+.admin-mobile-link:active {
 	color: var(--foreground);
 }
 
@@ -2776,10 +2786,6 @@ select {
    nav, bukan top nav desktop. Samakan dengan breakpoint admin (lg).
    Mirror dari aturan max-width:520px agar perilaku konsisten. */
 @media (min-width: 521px) and (max-width: 1023px) {
-	body[data-area="public"] {
-		padding-bottom: calc(5.1rem + env(safe-area-inset-bottom));
-	}
-
 	.site-nav {
 		position: fixed;
 		top: auto;
@@ -2854,5 +2860,75 @@ select {
 
 	body:has(.mobile-top-bar) main {
 		padding-top: calc(3.5rem + env(safe-area-inset-top));
+	}
+}
+
+/* MOBILE-TOUCH: tombol kembali pada top bar rute anak (min. 44px, di luar
+   <header> agar fixed tidak terjebak backdrop-filter .site-nav). */
+.mobile-top-back {
+	display: grid;
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+	place-items: center;
+	border: 1px solid var(--border);
+	border-radius: 0.8rem;
+	background: var(--secondary);
+	color: var(--secondary-foreground);
+	cursor: pointer;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease;
+}
+
+.mobile-top-back:hover,
+.mobile-top-back:active {
+	background: var(--accent);
+	color: var(--foreground);
+}
+
+.mobile-top-back svg {
+	width: 1.25rem;
+	height: 1.25rem;
+}
+
+/* MOBILE-TOUCH: tooltip hover-only tidak relevan di layar sentuh. */
+@media (hover: none) {
+	.reader-icon-action[data-tooltip]::after {
+		display: none;
+	}
+}
+
+/* MOBILE-TOUCH: target sentuh min. 44px — chip filter aktif, tombol tutup
+   dialog, dan hit-area hero dots (visual dot tetap kecil via ::after). */
+[aria-label="Filter aktif"] button {
+	min-height: 2.75rem;
+}
+
+.catalog-filter-dialog header button {
+	min-width: 2.75rem;
+	min-height: 2.75rem;
+}
+
+.featured-hero-dots button {
+	position: relative;
+}
+
+.featured-hero-dots button::after {
+	position: absolute;
+	inset: -1.125rem;
+	content: "";
+}
+
+/* MOBILE-SHEET: dialog filter ≤520px menjadi bottom-sheet dengan
+   padding safe-area; satu-satunya sumber clearance bottom-nav adalah
+   padding main di +layout (tidak ada padding ganda di body). */
+@media (max-width: 520px) {
+	.catalog-filter-dialog {
+		width: 100%;
+		max-width: 100%;
+		max-height: min(92dvh, 42rem);
+		margin: auto auto 0;
+		border-radius: 1.25rem 1.25rem 0 0;
+		padding-bottom: env(safe-area-inset-bottom);
 	}
 }
